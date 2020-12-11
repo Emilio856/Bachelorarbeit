@@ -136,9 +136,10 @@ def plotting(results):
     pickle.dump(results, open(filename, 'wb')) 
 	
 
-directory = "C://Users//emili//Desktop//Python//Bachelorarbeit Code"
+# directory = "C://Users//emili//Desktop//Python//Bachelorarbeit Code"
 run_id = datetime.now().strftime("VGG %Y_%m_%d T %H-%M-%S")
-logdir = 'C://Users//emili//Desktop//Python//Bachelorarbeit Code//VGG//' + run_id
+os.chdir("...")
+logdir = os.getcwd() + "//" + run_id
 os.mkdir(logdir)
 logdir = logdir + '//'
 

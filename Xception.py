@@ -110,10 +110,9 @@ tensorboard = TensorBoard(log_dir=f"logs/{NAME}")
 
 run_id = datetime.now().strftime("Xception %Y_%m_%d T %H-%M-%S")
 # logdir = 'C://Users//emili//Desktop//Python//Bachelorarbeit Code//AlexNet//' + run_id   # TODO dir
+os.chdir("..")
 logdir = os.getcwd() + "//" + run_id
 # directory = "C://Users//emili//Desktop//Python//Bachelorarbeit Code"
-os.chdir("..")
-directory = os.getcwd()
 os.mkdir(logdir)
 logdir = logdir + "//"
 

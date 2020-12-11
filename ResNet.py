@@ -163,16 +163,17 @@ tensorboard = TensorBoard(log_dir=f"logs/{NAME}")
 
 directory = "C://Users//emili//Desktop//Python//Bachelorarbeit Code"
 run_id = datetime.now().strftime("ResNet %Y_%m_%d T %H-%M-%S")
-logdir = 'C://Users//emili//Desktop//Python//Bachelorarbeit Code//ResNet//' + run_id
+os.chdir("..")
+logdir = os.getcwd() + "//" + run_id
 os.mkdir(logdir)
 logdir = logdir + '//'
 
-data_dir = pathlib.Path(directory)
+"""data_dir = pathlib.Path(directory)
 print(data_dir)
 
 image_count = len(list(data_dir.glob("*/*.png")))
 print(image_count)
-print(data_dir)
+print(data_dir)"""
 
 batch_size = 32
 img_height = 600

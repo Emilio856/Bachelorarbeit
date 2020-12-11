@@ -106,15 +106,12 @@ def plotting(results):
     pickle.dump(results, open(filename, 'wb'))
 
 
-NAME = f"Just a Testfile{int(time.time())}"
-tensorboard = TensorBoard(log_dir=f"logs/{NAME}")
-
 run_id = datetime.now().strftime("Inception ResNet V2 %Y_%m_%d T %H-%M-%S")
 # logdir = 'C://Users//emili//Desktop//Python//Bachelorarbeit Code//AlexNet//' + run_id   # TODO dir
+os.chdir("..")
 logdir = os.getcwd() + "//" + run_id
 # directory = "C://Users//emili//Desktop//Python//Bachelorarbeit Code"
-os.chdir("..")
-directory = os.getcwd()
+# os.chdir("..")
 os.mkdir(logdir)
 logdir = logdir + "//"
 
@@ -143,7 +140,6 @@ for img in glob.glob("C://Users//emili//Desktop//Python//Bachelorarbeit Code//Au
 # Convert images to numpy array and normalize them
 x_data = np.asarray(x_data)
 y_data = np.array(y_data)
-
 
 scaler = NDStandardScaler()
 scaler.fit(x_data)
