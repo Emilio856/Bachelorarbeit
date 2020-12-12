@@ -196,8 +196,6 @@ def init_efficientnet_b7(lr, hidden, drop):
     return b7_model
     
 
-
-
 search_space = [space.Real(2.5, 5.5, name='lr'),
                 space.Integer(200, 1000, name='hidden'),
                 space.Real(0, 0.7, name='drop'),
