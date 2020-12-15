@@ -10,7 +10,6 @@ import csv
 import time
 import tensorflow as tf
 from tensorflow import keras
-# import tensorflow.keras
 from datetime import datetime
 from sklearn.base import TransformerMixin
 from sklearn.model_selection import train_test_split
