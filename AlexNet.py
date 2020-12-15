@@ -9,7 +9,8 @@ import pickle
 import csv
 import time
 import tensorflow as tf
-import tensorflow.keras
+from tensorflow import keras
+# import tensorflow.keras
 from datetime import datetime
 from sklearn.base import TransformerMixin
 from sklearn.model_selection import train_test_split
@@ -23,8 +24,8 @@ from sklearn.model_selection import cross_val_score
 from skopt import gp_minimize, plots, space
 from skopt.utils import use_named_args
 from NDStandardScaler import NDStandardScaler
-from tensorflow.keras.callbacks import TensorBoard
-from tensorflow.keras.preprocessing import image
+from keras.callbacks import TensorBoard
+from keras.preprocessing import image
 
 
 # Input data
