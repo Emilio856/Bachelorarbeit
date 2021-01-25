@@ -232,7 +232,7 @@ h.write('lr,drop,drop2,loss1,loss2,batch size,min loss\n')
 h.close()
 
 # Early Stopping
-callb = tf.keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0.01, patience=20, mode='min',
+callb = tf.keras.callbacks.EarlyStopping(monitor="val_loss", min_delta=0.01, patience=20, mode="min",
                                          restore_best_weights=True)
 
 # Uses Tensorboard to monitor training
@@ -240,7 +240,7 @@ callb2 = tf.keras.callbacks.TensorBoard(log_dir=logdir, histogram_freq=10, write
 
 # Starts optimization
 # n_calls are number of diferent parameter sets
-result = gp_minimize(evaluate_func, search_space, n_calls=10, n_jobs=1, verbose=True, acq_func='gp_hedge',
-                     acq_optimizer='auto', callback=[plotting])  # , callback=[tensorboard]
+result = gp_minimize(evaluate_func, search_space, n_calls=10, n_jobs=1, verbose=True, acq_func="gp_hedge",
+                     acq_optimizer="auto", callback=[plotting])  # , callback=[tensorboard]
 
 print("Best Accuracy: %  3f" % (1.0 - result.fun))

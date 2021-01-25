@@ -1,0 +1,28 @@
+
+# Python
+__pycache__/
+*.pyc
+build/
+dist/
+*.egg-info
+
+# Virtual environment
+venv/
+test_venv/
+
+# Visual Studio Code
+.vscode/
+
+# Datasets
+/data/*
+!/data/*.sh
+
+# Serialized models
+/models/
+
+# Compute overlap
+compute_overlap.c
+*.so
+
+# mypy
+.mypy_cache/
