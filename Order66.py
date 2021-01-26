@@ -1,41 +1,64 @@
 import tensorflow as tf
 import numpy as np
+import matplotlib.pyplot as plt
 
 from numpy import mean
 from sklearn.datasets import make_classification
 from sklearn.model_selection import LeaveOneOut
 from sklearn.model_selection import KFold
 from sklearn.model_selection import cross_val_score
-from matplotlib import pyplot
+from sklearn.model_selection import train_test_split
+from sklearn.model_selection import StratifiedKFold
 from Pipeline import DataPipeline
 from Pipeline import model_test
 
-def get_data():
-    return DataPipeline.get_dataset()
+
+models_to_train = [
+    "alexnet",
+    "vgg16",
+    "vgg19",
+    "efficientnet",
+    "efficientdet",
+    "inceptionresnetv2",
+    "inception",
+    "mobilenetv3",
+    "resnetv2",
+    "gcnn",
+    "xception"
+]
 
 def get_model():
     return model_test.create_vvg16()
 
-def evaluate_model(cc):
-    dataset = get_data()
-    model = get_model()
-    # evaluate model
-    scores = cross_val_score(model, dataset, scoring="accuracy", cv=cc, n_jobs=-1)
-    return mean(scores), scores.min(), scores.max()
+def plot_history(history):
+    hist = pd.DataFrame(history.history)
+    hist["epoch"] = history.epoch
 
-"""# calculate ideal test condiction
-ideal, _, _ = evaluate_model(LeaveOneOut())
-print("Ideal: % 3f" % ideal)
-folds = range(2, 18)
-means, mins, maxs = list(), list(), list()
-# evaluate for each k value
-for k in folds:
-    cv = KFold(n_splits=k, shuffle=True, random_state=42)
-    k_mean, k_min, k_max = evaluate_model(cv)
-    print("> folds=%d, accuracy=%.3f (%.3f,%.3f)" % (k, k_mean, k_min, k_max))
-    means.append(k_mean)
-    means.append(k_mean - k_min)
-    means.append(k_max - k_mean)
-pyplot.errorbar(folds, means, yerr=[mins, maxs], fmt="o")
-pyplot.plot(folds, [ideal for _ in range(len(folds))], color="r")
-pyplot.show()"""
+    plt.figure()
+    plt.xlabel("Epoch")
+    plt.ylabel("Mean absolute error")
+    plt.plot(hist["epoch"], hist["mae"], label="Training ERror")
+    plt.plot(hist["epoch"], hist["val_mae"], label="Validation error")
+    plt.ylim([0,5])
+    plt.legend()
+
+    plt.figure()
+    plt.xlabel("Epoch")
+    plt.ylabel("Mean squared error")
+    plt.plot(hist["epoch"], hist["mse"], label="Training error")
+    plt.plot(hist["epoch"], hist["val_mse"], label="Validation error")
+    plt.ylim(0,20)
+    plt.legend()
+    plt.show()
+
+
+
+dataset = DataPipeline.get_dataset()
+callback1, callback2 = model_test.get_callbacks()
+train_size = round(0.7 * len(dataset))
+train = dataset.take(train_size)
+test = dataset.skip(train_size)
+
+model = get_model()
+model.compile(tf.keras.optimizers.Adam(lr=0.001, amsgrad=True,), tf.keras.losses.MeanSquaredError(), ["mae", "accuracy"])
+history = model.fit(train, validation_split=0.2, callbacks=[callback1, callback2], epochs=200, verbose=2)

@@ -129,11 +129,9 @@ def get_dataset():
         # dataset = tf.data.TFRecordDataset(["./sample.tfrecords"]).map(decoder, num_parallel_calls=4)
         # dataset = tf.data.TFRecordDataset(["./sample.tfrecords"])
         dataset = tf.data.Dataset.from_tensor_slices((images, labels))
-        print("len dataset", len(dataset))
 
         # Shuffle and repeat with buffer size equal to length of dataset -> ensures good shuffling
         dataset = dataset.shuffle(len(images), seed=seed)
-        # dataset = dataset.repeat(2) # TODO necesario/bueno??
 
         dataset = dataset.map(img_decoder, num_parallel_calls=4)
         dataset = dataset.batch(16, drop_remainder=True)
@@ -141,14 +139,6 @@ def get_dataset():
 
         # TODO .cache() ??
 
-        # Split in train and test sets
-        train_size = round(0.7 * len(dataset))
-        train = dataset.take(train_size)
-        test = dataset.skip(train_size)
-        print("batches", len(dataset))
-        print("train", len(train))
-        print("test", len(test))
-
         return dataset
 
-# m = get_dataset()
+m = get_dataset()

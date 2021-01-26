@@ -23,8 +23,6 @@ from sklearn.model_selection import KFold
 from tensorflow.keras.callbacks import TensorBoard
 from tensorflow.keras.preprocessing import image
 from tensorflow.keras.layers.experimental import preprocessing
-sys.path.insert(1, "C:\\Users\\emili\\Desktop\\Python\\Bachelorarbeit Code\\CNNs")
-from vgg16 import VGG16
 
 
 def create_vvg16():
@@ -40,3 +38,13 @@ def create_vvg16():
     vgg_model = tf.keras.Model(inputs=base_vgg.input, outputs=output_layer)
 
     return vgg_model
+
+def get_callbacks():
+    # Early Stopping
+    callb1 = tf.keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0.01, patience=20, mode='min',
+                                            restore_best_weights=True)
+
+    # Uses Tensorboard to monitor training
+    callb2 = tf.keras.callbacks.TensorBoard(log_dir=logdir, histogram_freq=10, write_graph=True)
+
+    return callb1, callb2
