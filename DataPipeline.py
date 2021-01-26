@@ -125,9 +125,6 @@ def get_dataset():
             
             return img, label
 
-
-        # dataset = tf.data.TFRecordDataset(["./sample.tfrecords"]).map(decoder, num_parallel_calls=4)
-        # dataset = tf.data.TFRecordDataset(["./sample.tfrecords"])
         dataset = tf.data.Dataset.from_tensor_slices((images, labels))
 
         # Shuffle and repeat with buffer size equal to length of dataset -> ensures good shuffling
