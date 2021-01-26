@@ -98,16 +98,5 @@ def get_model(model_name):
             print("Error, spelling mistake in model name")
     else:
         print("Error, model is not implemented")
-        
+
     return model
-
-
-def get_callbacks():
-    # Early Stopping
-    callb1 = tf.keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0.01, patience=20, mode='min',
-                                            restore_best_weights=True)
-
-    # Uses Tensorboard to monitor training
-    callb2 = tf.keras.callbacks.TensorBoard(log_dir=logdir, histogram_freq=10, write_graph=True)
-
-    return callb1, callb2
