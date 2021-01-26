@@ -27,9 +27,16 @@ sys.path.insert(1, "C:\\Users\\emili\\Desktop\\Python\\Bachelorarbeit Code\\CNNs
 from vgg16 import VGG16
 
 
+def create_vvg16():
+    base_vgg = tf.keras.applications.VGG16(input_shape=(450, 450, 3), include_top=False, weights="imagenet")
+    x = base_vgg.output
+    x = tf.keras.layers.Flatten()(x)
+    x = tf.keras.layers.Dense(4096, activation="elu")(x)
+    x = tf.keras.layers.Dropout(0.5)(x)
+    x = tf.keras.layers.Dense(4096, activation="elu")(x)
+    x = tf.keras.layers.Dropout(0.5)(x)
 
-model = VGG16(input_shape=(450, 450, 3), include_top=False, weights="imagenet")
-print(model.summary())
-print("Saving...")
-model.save("C:\\Users\\emili\\Desktop\\Python\\Bachelorarbeit Code\\vgg16_model")
-print("DONE")
+    output_layer = tf.keras.layers.Dense(1, activation="softmax")(x)
+    vgg_model = tf.keras.Model(inputs=base_vgg.input, outputs=output_layer)
+
+    return vgg_model
