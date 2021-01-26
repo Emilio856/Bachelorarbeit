@@ -6,6 +6,7 @@ import model_manager
 import pandas as pd
 import os
 import time
+from numba import cuda
 
 from numpy import mean
 from datetime import datetime
@@ -17,9 +18,13 @@ from sklearn.model_selection import train_test_split
 from sklearn.model_selection import StratifiedKFold
 
 
+cuda_device = cuda.get_current_device
+cuda_device.reset()
+
 device = tf.config.experimental.list_physical_devices("GPU")
 tf.config.experimental.set_memory_growth(device[0], enable=True)
 
+exceptions_num = 0
 for attempt in range(10):
     try:
 
@@ -127,8 +132,18 @@ for attempt in range(10):
 
         history = model.fit(train, validation_split=0.2, callbacks=[callback1, callback2], epochs=200, verbose=2)
 
+        # Evaluate model on test set
+        print("Evaluate")
+        result = model.evaluate(test)
+        result_dict = dict(zip(model.metrics, result))
+
+        with open("testing_result.txt", "w") as f:
+            for key, value in result_dict.items():
+                f.write(f"{key} = {value}\n")
+
     except Exception:
-        print("caught an exception!")
+        exceptions_num += 1
+        print(f"Caught exception number {exceptions_num}!")
         time.sleep(10)
     else:
         break
