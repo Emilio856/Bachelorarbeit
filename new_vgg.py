@@ -1,6 +1,3 @@
-import cv2
-import glob
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import os
@@ -25,6 +22,8 @@ from tensorflow.keras.preprocessing import image
 from tensorflow.keras.layers.experimental import preprocessing
 
 
+# Models from:
+# https://arxiv.org/pdf/1409.1556.pdf
 def create_vvg16():
     base_vgg = tf.keras.applications.VGG16(input_shape=(450, 450, 3), include_top=False, weights="imagenet")
     x = base_vgg.output
@@ -39,12 +38,16 @@ def create_vvg16():
 
     return vgg_model
 
-def get_callbacks():
-    # Early Stopping
-    callb1 = tf.keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0.01, patience=20, mode='min',
-                                            restore_best_weights=True)
+def create_vgg19():
+    base_vgg = tf.keras.applications.VGG19(input_shape=(450, 450, 3), include_top=False, weights="imagenet")
+    x = base_vgg.output
+    x = tf.keras.layers.Flatten()(x)
+    x = tf.keras.layers.Dense(4096, activation="elu")(x)
+    x = tf.keras.layers.Dropout(0.5)(x)
+    x = tf.keras.layers.Dense(4096, activation="elu")(x)
+    x = tf.keras.layers.Dropout(0.5)(x)
 
-    # Uses Tensorboard to monitor training
-    callb2 = tf.keras.callbacks.TensorBoard(log_dir=logdir, histogram_freq=10, write_graph=True)
+    output_layer = tf.keras.layers.Dense(1, activation="softmax")(x)
+    vgg_model = tf.keras.Model(inputs=base_vgg.input, outputs=output_layer)
 
-    return callb1, callb2
+    return vgg_model

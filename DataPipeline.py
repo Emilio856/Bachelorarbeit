@@ -117,7 +117,7 @@ def get_dataset():
                 }
             )"""
         
-        @retry(Exception, delay=1, tries=100)
+        @retry(Exception, delay=5, tries=100)
         def img_decoder(img_path, label):
             read_img = tf.io.read_file(img_path)
             img = tf.image.decode_png(read_img, channels=3)

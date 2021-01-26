@@ -1,64 +1,134 @@
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
+import DataPipeline
+import model_manager
+import pandas as pd
+import os
+import time
 
 from numpy import mean
+from datetime import datetime
 from sklearn.datasets import make_classification
 from sklearn.model_selection import LeaveOneOut
 from sklearn.model_selection import KFold
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import StratifiedKFold
-from Pipeline import DataPipeline
-from Pipeline import model_test
 
 
-models_to_train = [
-    "alexnet",
-    "vgg16",
-    "vgg19",
-    "efficientnet",
-    "efficientdet",
-    "inceptionresnetv2",
-    "inception",
-    "mobilenetv3",
-    "resnetv2",
-    "gcnn",
-    "xception"
-]
+device = tf.config.experimental.list_physical_devices("GPU")
+tf.config.experimental.set_memory_growth(device[0], enable=True)
 
-def get_model():
-    return model_test.create_vvg16()
+for attempt in range(10):
+    try:
 
-def plot_history(history):
-    hist = pd.DataFrame(history.history)
-    hist["epoch"] = history.epoch
+        models_to_train = [
+            "alexnet",
+            "vgg16",
+            "vgg19"
+            "efficientnet_b0",
+            "efficientnet_b1",
+            "efficientnet_b2",
+            "efficientnet_b3",
+            "efficientnet_b4",
+            "efficientnet_b5",
+            "efficientnet_b6",
+            "efficientnet_b7",
+            "efficientdet_d0",
+            "inception_resnet_v2",
+            "inception",
+            "mobilenet_v3_small",
+            "mobilenet_v3_large"
+            "resnet50_v2",
+            "resnet101_v2",
+            "resnet152_v2",
+            "gcnn",
+            "xception"
+        ]
 
-    plt.figure()
-    plt.xlabel("Epoch")
-    plt.ylabel("Mean absolute error")
-    plt.plot(hist["epoch"], hist["mae"], label="Training ERror")
-    plt.plot(hist["epoch"], hist["val_mae"], label="Validation error")
-    plt.ylim([0,5])
-    plt.legend()
+        def get_model(model_name):
+            return model_manager.create_vvg16(model_name)
 
-    plt.figure()
-    plt.xlabel("Epoch")
-    plt.ylabel("Mean squared error")
-    plt.plot(hist["epoch"], hist["mse"], label="Training error")
-    plt.plot(hist["epoch"], hist["val_mse"], label="Validation error")
-    plt.ylim(0,20)
-    plt.legend()
-    plt.show()
+        def plot_history(history):
+            hist = pd.DataFrame(history.history)
+            hist["epoch"] = history.epoch
+
+            plt.figure()
+            plt.xlabel("Epoch")
+            plt.ylabel("Mean absolute error")
+            plt.plot(hist["epoch"], hist["mae"], label="Training ERror")
+            plt.plot(hist["epoch"], hist["val_mae"], label="Validation error")
+            plt.ylim([0,5])
+            plt.legend()
+
+            plt.figure()
+            plt.xlabel("Epoch")
+            plt.ylabel("Mean squared error")
+            plt.plot(hist["epoch"], hist["mse"], label="Training error")
+            plt.plot(hist["epoch"], hist["val_mse"], label="Validation error")
+            plt.ylim(0,20)
+            plt.legend()
+            plt.show()
 
 
 
-dataset = DataPipeline.get_dataset()
-callback1, callback2 = model_test.get_callbacks()
-train_size = round(0.7 * len(dataset))
-train = dataset.take(train_size)
-test = dataset.skip(train_size)
+        dataset = DataPipeline.get_dataset()
+        train_size = round(0.7 * len(dataset))
+        train = dataset.take(train_size)
+        test = dataset.skip(train_size)
 
-model = get_model()
-model.compile(tf.keras.optimizers.Adam(lr=0.001, amsgrad=True,), tf.keras.losses.MeanSquaredError(), ["mae", "accuracy"])
-history = model.fit(train, validation_split=0.2, callbacks=[callback1, callback2], epochs=200, verbose=2)
+
+        training_model = ""
+        model = get_model(training_model)
+
+        run_id = datetime.now().strftime("VGG %Y_%m_%d T %H-%M-%S")
+        os.chdir("...")
+        logdir = os.getcwd() + "//" + run_id
+        os.mkdir(logdir)
+        logdir = logdir + '//'
+
+        # Label log file
+        h = open(logdir+'out.txt', 'a')
+        h.write('lr,drop,drop2,loss1,loss2,batch size,min loss\n')
+        h.close()
+
+        # Early Stopping
+        callback1 = tf.keras.callbacks.EarlyStopping(
+            monitor="val_loss",
+            min_delta=0.01,
+            patience=20,
+            mode="min",
+            restore_best_weights=True
+        )
+
+        # Uses Tensorboard to monitor training
+        callback2 = tf.keras.callbacks.TensorBoard(
+            log_dir=logdir,
+            histogram_freq=1,
+            write_graph=True,
+            write_images=True
+        )
+
+        # Checkpoint
+        checkpoint_path ="training/cp.ckpt"
+        checkpoint_dir = os.path.dirname(checkpoint_path)
+
+        callback3 = tf.keras.callbacks.ModelCheckpoint(
+            filepath=checkpoint_path,
+            monitor="val_loss",
+            verbose=1,
+            save_weights_only=True,
+            save_best_only=True,
+            mode="max"
+        )
+
+        model.compile(tf.keras.optimizers.Adam(lr=0.001, amsgrad=True,), tf.keras.losses.MeanSquaredError(), ["mae", "accuracy"])
+
+        history = model.fit(train, validation_split=0.2, callbacks=[callback1, callback2], epochs=200, verbose=2)
+
+    except Exception:
+        print("caught an exception!")
+        time.sleep(10)
+    else:
+        break
