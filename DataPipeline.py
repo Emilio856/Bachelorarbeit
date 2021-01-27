@@ -64,8 +64,6 @@ def get_dataset():
                         pass
 
         
-        print("images", len(images))
-        print("labels", len(labels))
 
         df = pd.DataFrame({"img_path": images, "label": labels})
 

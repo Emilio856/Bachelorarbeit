@@ -116,7 +116,8 @@ for attempt in range(10):
         )
 
         # Checkpoint
-        checkpoint_path ="training/cp.ckpt"
+        # checkpoint_path ="training\\cp.ckpt"
+        checkpoint_path = os.path.join("training, cp.ckpt")
         checkpoint_dir = os.path.dirname(checkpoint_path)
 
         callback3 = tf.keras.callbacks.ModelCheckpoint(
@@ -140,6 +141,8 @@ for attempt in range(10):
         with open("testing_result.txt", "w") as f:
             for key, value in result_dict.items():
                 f.write(f"{key} = {value}\n")
+        
+        model.save(training_model + "_" + run_id + ".h5")
 
     except Exception:
         exceptions_num += 1
