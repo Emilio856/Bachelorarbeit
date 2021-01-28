@@ -117,6 +117,3 @@ def get_model(model_name):
         print("Error, model is not implemented")
 
     return model
-
-my_model = get_model("vgg16")
-my_model.summary()

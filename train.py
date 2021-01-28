@@ -1,13 +1,13 @@
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
-import DataPipeline
-import model_manager
 import pandas as pd
 import os
 import time
-from numba import cuda
+import data_pipeline as data_pipeline
+import model_manager as model_manager
 
+from numba import cuda
 from numpy import mean
 from datetime import datetime
 from sklearn.datasets import make_classification
@@ -18,7 +18,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.model_selection import StratifiedKFold
 
 
-cuda_device = cuda.get_current_device
+cuda_device = cuda.get_current_device()
 cuda_device.reset()
 
 device = tf.config.experimental.list_physical_devices("GPU")
