@@ -10,14 +10,16 @@ from retry import retry
 
 def get_dataset():
     with tf.device("/cpu:0"):
-        path = "K:\\Data\\2020-12-03"
+        # path = "K:\\Data\\2020-12-03"
+        path = "C:\\Users\\uffie\\bwSyncAndShare\\Bachelorarbeit-master"
+        img_type = "CLAHE"   # Replace!! -> CLAHE or HarrisCorner
         seed = 42
 
         """
         Data from augmented imgs
         """
         # Open labels
-        with open(os.path.join(path,"debayered_images_cropped_augmented_180degree", "labels_augmented_imgs.json")) as f:
+        with open(os.path.join(path,"Augmented180", "labels_augmented_imgs.json")) as f:
                 labels = list()
                 json_file = json.load(f)
 
@@ -28,7 +30,7 @@ def get_dataset():
 
         # Only load images that have a label
         images = list()
-        for subdir, dirs, files in os.walk(os.path.join(path, "debayered_images_cropped_augmented_180degree")):
+        for subdir, dirs, files in os.walk(os.path.join(path, "Augmented180", img_type)):
             for file in files:
                 folder = subdir.split("\\")[-1]
                 if ".png" in file and file in json_file[folder] and json_file[folder][file] != None:
@@ -40,7 +42,7 @@ def get_dataset():
         Data from normal imgs
         """
         # Open labels
-        with open(os.path.join(path, "Debayered_images_cropped", "combined_labels.json")) as f:
+        with open(os.path.join(path, "Cropped", "combined_labels.json")) as f:
             json_file = json.load(f)
         
         for folder in json_file:
@@ -52,7 +54,7 @@ def get_dataset():
                         labels.append(json_file[folder][img][-1])
         
         # Only loads images that have a label
-        for subdir, dirs, files in os.walk(os.path.join(path, "Debayered_images_cropped")):
+        for subdir, dirs, files in os.walk(os.path.join(path, "Cropped", img_type)):
             if "gerissen" in subdir or "licht" in subdir or "weiß" in subdir or "papier" in subdir:
                 pass
             else:
@@ -104,16 +106,8 @@ def get_dataset():
                 for record in read_csv(file_path=in_file):
                     writer.write(record)
 
-        tf_record_writer()
 
-        """def decoder(record):
-            return tf.io.parse_single_example(
-                record,
-                {
-                    "img_path": tf.io.FixedLenFeature([], dtype=tf.string),
-                    "label": tf.io.FixedLenFeature([], dtype=tf.float32)
-                }
-            )"""
+        tf_record_writer()
         
         @retry(Exception, delay=5, tries=100)
         def img_decoder(img_path, label):

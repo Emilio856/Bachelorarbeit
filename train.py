@@ -53,7 +53,7 @@ for attempt in range(10):
         ]
 
         def get_model(model_name):
-            return model_manager.create_vvg16(model_name)
+            return model_manager.get_model(model_name)
 
         def plot_history(history):
             hist = pd.DataFrame(history.history)

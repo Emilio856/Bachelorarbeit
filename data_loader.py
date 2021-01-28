@@ -13,7 +13,6 @@ def load_data(path):
     for folder in json_file:
         for img in json_file[folder]:
             if json_file[folder][img] != None:
-                # labels.append(img[-1])
                 labels.append(json_file[folder][img][-1])
 
     # Only load images that have a label
@@ -21,7 +20,6 @@ def load_data(path):
     for subdir, dirs, files in os.walk(path):
         for file in files:
             folder = subdir.split("\\")[-1]
-            # if ".png" in file and file in labels[folder] and labels[folder][file] != None:
             if ".png" in file and file in json_file[folder] and json_file[folder][file] != None:
                 images.append(os.path.join(subdir, file))
             else:
