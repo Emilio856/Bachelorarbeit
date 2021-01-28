@@ -78,7 +78,7 @@ for attempt in range(10):
 
 
 
-        dataset = DataPipeline.get_dataset()
+        dataset = data_pipeline.get_dataset()
         train_size = round(0.7 * len(dataset))
         train = dataset.take(train_size)
         test = dataset.skip(train_size)
