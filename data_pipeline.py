@@ -128,6 +128,11 @@ def get_dataset():
 
         # TODO .cache() ??
 
-        return dataset
+        train_size = round(0.7 * len(dataset))
+        train = dataset.take(train_size)
+        test = dataset.skip(train_size)
 
-m = get_dataset()
+        return train, test
+
+tr, te = get_dataset()
+print("Done")
