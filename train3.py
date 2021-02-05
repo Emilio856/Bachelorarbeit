@@ -3,23 +3,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import os
-import time
+import gc
 # import data_pipeline as data_pipeline
 import model_manager as model_manager
 
 from numba import cuda
-from numpy import mean
 from datetime import datetime
-from sklearn.datasets import make_classification
-from sklearn.model_selection import LeaveOneOut
-from sklearn.model_selection import KFold
-from sklearn.model_selection import cross_val_score
-from sklearn.model_selection import train_test_split
-from sklearn.model_selection import StratifiedKFold
 
 
 cuda_device = cuda.get_current_device()
 cuda_device.reset()
+gc.enable()
+gc.collect()
 
 device = tf.config.experimental.list_physical_devices("GPU")
 tf.config.experimental.set_memory_growth(device[0], enable=True)
@@ -76,46 +71,52 @@ def plot_history(history):
     plt.legend()
     plt.show()
 
-def parser(record):
-    keys_to_feature = {
-        "img_path": tf.io.FixedLenFeature([], tf.string),
-        "label": tf.io.FixedLenFeature([], tf.float32)
-    }
-    parsed = tf.io.parse_single_example(record, keys_to_feature)
-    img = tf.io.decode_raw(parsed["img_path"], tf.uint8)
-    img = tf.cast(img, tf.float32)
-    label = tf.cast(parsed["label"], tf.float32)
 
-    # return {"img": img}, label
-    return img, label
 
-def get_tfrecord(filenames):
-    dataset = tf.data.TFRecordDataset(filenames=filenames, num_parallel_reads=20)
-    dataset = dataset.shuffle(8683, seed=42)
-    dataset = dataset.map(parser, num_parallel_calls=20)
-    dataset = dataset.batch(16, drop_remainder=True)
-    dataset = dataset.prefetch(2)
+
+
+def decode_image(image):
+    image = tf.image.decode_png(image, channels=3)
+    image = tf.cast(image, tf.float32)
+    image = tf.reshape(image, [450, 450, 3])
+    return image
+
+def read_tfrecord(example):
+    tfrecord_format = (
+        {
+            "img_path": tf.io.FixedLenFeature([], tf.string),
+            "label": tf.io.FixedLenFeature([], tf.float32)
+        }
+    )
+    example = tf.io.parse_single_example(example, tfrecord_format)
+    image = decode_image(example["img_path"])
+    label = tf.cast(example["label"], tf.float32)
+    return image, label
+
+def load_dataset(filenames):
+    dataset = tf.data.TFRecordDataset(filenames)
+    dataset = dataset.map(read_tfrecord, num_parallel_calls=20)
     return dataset
 
-def get_train_data():
-    return get_tfrecord(filenames=["train.tfrecords"])
+def get_dataset(filenames):
+    with tf.device("/cpu"):
+        dataset = load_dataset(filenames)
+        dataset = dataset.shuffle(2048)
+        # dataset = dataset.prefetch(1)
+        dataset = dataset.batch(8)
+        return dataset
 
-def get_val_data():
-    return get_tfrecord(filenames=["val.tfrecords"])
-
-def get_test_data():
-    return get_tfrecord(filenames=["test.tfrecords"])
-
-
-
-"""dataset = data_pipeline.get_dataset()
-train_size = round(0.7 * len(dataset))
-train = dataset.take(train_size)
-test = dataset.skip(train_size)"""
+gc.collect()
+train_dataset = get_dataset("train.tfrecords")
+val_dataset = get_dataset("val.tfrecords")
+test_dataset = get_dataset("test.tfrecords")
+gc.collect()
 
 
-training_model = "vgg16"
-model = get_model(training_model)
+
+
+
+
 
 run_id = datetime.now().strftime("VGG %Y_%m_%d T %H-%M-%S")
 os.chdir("..")
@@ -161,29 +162,29 @@ callback3 = tf.keras.callbacks.ModelCheckpoint(
     mode="max"
 )
 
+gc.collect()
+training_model = "vgg16"
+model = get_model(training_model)
+gc.collect()
 model.compile(tf.keras.optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-8, decay=0.0, amsgrad=True,), tf.keras.losses.MeanSquaredError(), ["mae", "accuracy"])
 
 
-train = get_train_data()
-val = get_val_data()
-test = get_test_data()
+gc.collect()
+history = model.fit(train_dataset, validation_data=val_dataset, callbacks=[callback1, callback2, callback3], epochs=20, verbose=2)
+gc.collect()
 
-x_train = np.random.random((20, 450, 450, 3))
-y_train = np.random.random((20,))
 
-# history = model.fit(train, validation_data=val, callbacks=[callback1, callback2, callback3], epochs=200, verbose=2)
-history = model.fit(x_train, y_train, batch_size=8, validation_split=0.2, epochs=10)
-
+"""
 # Evaluate model on test set
 print("Evaluate")
-result = model.evaluate(test)
+result = model.evaluate(test_data)
 result_dict = dict(zip(model.metrics, result))
 
 with open("testing_result.txt", "w") as f:
     for key, value in result_dict.items():
         f.write(f"{key} = {value}\n")
 
-model.save(training_model + "_" + run_id + ".h5")
+model.save(training_model + "_" + run_id + ".h5")"""
 
 """except Exception:
     exceptions_num += 1

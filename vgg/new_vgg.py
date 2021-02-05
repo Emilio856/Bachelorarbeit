@@ -28,9 +28,9 @@ def create_vvg16():
     base_vgg = tf.keras.applications.VGG16(input_shape=(450, 450, 3), include_top=False, weights="imagenet")
     x = base_vgg.output
     x = tf.keras.layers.Flatten()(x)
-    x = tf.keras.layers.Dense(4096, activation="elu")(x)
+    x = tf.keras.layers.Dense(512, activation="elu")(x)
     x = tf.keras.layers.Dropout(0.5)(x)
-    x = tf.keras.layers.Dense(4096, activation="elu")(x)
+    x = tf.keras.layers.Dense(512, activation="elu")(x)
     x = tf.keras.layers.Dropout(0.5)(x)
 
     output_layer = tf.keras.layers.Dense(1, activation="softmax")(x)
@@ -42,9 +42,9 @@ def create_vgg19():
     base_vgg = tf.keras.applications.VGG19(input_shape=(450, 450, 3), include_top=False, weights="imagenet")
     x = base_vgg.output
     x = tf.keras.layers.Flatten()(x)
-    x = tf.keras.layers.Dense(4096, activation="elu")(x)
+    x = tf.keras.layers.Dense(512, activation="elu")(x)
     x = tf.keras.layers.Dropout(0.5)(x)
-    x = tf.keras.layers.Dense(4096, activation="elu")(x)
+    x = tf.keras.layers.Dense(512, activation="elu")(x)
     x = tf.keras.layers.Dropout(0.5)(x)
 
     output_layer = tf.keras.layers.Dense(1, activation="softmax")(x)

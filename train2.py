@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import os
 import time
+import cv2
 # import data_pipeline as data_pipeline
 import model_manager as model_manager
 
@@ -16,6 +17,8 @@ from sklearn.model_selection import KFold
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import StratifiedKFold
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
 
 
 cuda_device = cuda.get_current_device()
@@ -76,6 +79,56 @@ def plot_history(history):
     plt.legend()
     plt.show()
 
+"""def read_image(path):
+    img = cv2.imread(path, cv2.IMREAD_COLOR)
+    img = img / 255.0
+    img = img.astype(np.float32)
+    return img"""
+
+def preprocess(record):
+    IMAGE_SIZE = [450, 450]
+    keys_to_feature = {
+        "img_path": tf.io.FixedLenFeature([], tf.string),
+        "label": tf.io.FixedLenFeature([], tf.float32)
+    }
+    parsed = tf.io.parse_single_example(record, keys_to_feature)
+    image_raw = parsed["img_path"]
+    # image = tf.io.decode_raw(image_raw, tf.uint8)
+    image = tf.image.decode_png(image_raw, channels=3)
+    image = tf.cast(image, tf.float32)
+    image = tf.reshape(image, [*IMAGE_SIZE, 3])
+    label = parsed["label"]
+
+    """# img = tf.io.decode_raw(parsed["img_path"], tf.string)
+    img = tf.io.read_file(parsed["img_path"])
+    # img = img.tostring()
+    img = tf.io.read_file(img)
+    img = tf.image.decode_png(img, channels=3)
+    img = tf.image.convert_image_dtype(img, tf.float32)
+    img = tf.cast(img, tf.float32)
+    label = tf.cast(parsed["label"], tf.float32)
+    return img, label"""
+    # features = tf.io.parse_single_example([record], features=keys_to_feature)
+
+
+    """label_1d = tf.cast(parsed["label"], tf.string)
+    img_1d = tf.cast(parsed["img_path"], tf.string)
+
+    img_restored = tf.reshape(img_1d, tf.stack([450, 450, 3]))"""
+
+    #parsed = tf.io.parse_single_example(record, keys_to_feature)
+    #image_path = tf.io.decode_raw(parsed["img_path"], tf.uint8)
+
+    """image_path =  [x.decode("utf-8") for x in image_path]
+    image_path = "".join(image_path)"""
+    # img = cv2.imread(image_path, cv2.IMREAD_COLOR)
+    # label = tf.cast(parsed["label"], tf.float32)
+    print("LABEEEEEEEEEEEEEEEEEEEEEEEEEEEL", label)
+    # img = tf.io.read_file(parsed["img_path"])
+    
+    
+    return image, label
+
 def parser(record):
     keys_to_feature = {
         "img_path": tf.io.FixedLenFeature([], tf.string),
@@ -86,15 +139,19 @@ def parser(record):
     img = tf.cast(img, tf.float32)
     label = tf.cast(parsed["label"], tf.float32)
 
-    # return {"img": img}, label
-    return img, label
+    return {"img": img}, label
+    # return img, label
 
 def get_tfrecord(filenames):
-    dataset = tf.data.TFRecordDataset(filenames=filenames, num_parallel_reads=20)
+    dataset = tf.data.TFRecordDataset(filenames=filenames)   # num_parallel_reads=20
+    """for raw_record in dataset.take(1):
+        example = tf.train.Example()
+        example.ParseFromString(raw_record.numpy())
+        print(example)"""
     dataset = dataset.shuffle(8683, seed=42)
-    dataset = dataset.map(parser, num_parallel_calls=20)
-    dataset = dataset.batch(16, drop_remainder=True)
-    dataset = dataset.prefetch(2)
+    dataset = dataset.map(preprocess, num_parallel_calls=20)
+    dataset = dataset.batch(4, drop_remainder=True)
+    # dataset = dataset.prefetch(1)
     return dataset
 
 def get_train_data():
@@ -114,8 +171,7 @@ train = dataset.take(train_size)
 test = dataset.skip(train_size)"""
 
 
-training_model = "vgg16"
-model = get_model(training_model)
+
 
 run_id = datetime.now().strftime("VGG %Y_%m_%d T %H-%M-%S")
 os.chdir("..")
@@ -161,29 +217,37 @@ callback3 = tf.keras.callbacks.ModelCheckpoint(
     mode="max"
 )
 
+training_model = "vgg16"
+model = get_model(training_model)
 model.compile(tf.keras.optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-8, decay=0.0, amsgrad=True,), tf.keras.losses.MeanSquaredError(), ["mae", "accuracy"])
 
 
-train = get_train_data()
-val = get_val_data()
-test = get_test_data()
+train_data = get_train_data()
+val_data = get_val_data()
+test_data = get_test_data()
 
-x_train = np.random.random((20, 450, 450, 3))
-y_train = np.random.random((20,))
 
-# history = model.fit(train, validation_data=val, callbacks=[callback1, callback2, callback3], epochs=200, verbose=2)
-history = model.fit(x_train, y_train, batch_size=8, validation_split=0.2, epochs=10)
 
+history = model.fit(train_data, validation_data=val_data, callbacks=[callback1, callback2, callback3], epochs=200, verbose=2)
+"""model2 = Sequential()
+model2.add(Dense(4, activation="relu"))
+model2.add(Dense(4, activation="relu"))
+model2.add(Dense(4, activation="relu"))
+model2.add(Dense(1))
+model2.compile(optimizer="rmsprop", loss="mse")
+hisotry = model2.fit(train_data, validation_data=val_data, epochs=10)"""
+
+"""
 # Evaluate model on test set
 print("Evaluate")
-result = model.evaluate(test)
+result = model.evaluate(test_data)
 result_dict = dict(zip(model.metrics, result))
 
 with open("testing_result.txt", "w") as f:
     for key, value in result_dict.items():
         f.write(f"{key} = {value}\n")
 
-model.save(training_model + "_" + run_id + ".h5")
+model.save(training_model + "_" + run_id + ".h5")"""
 
 """except Exception:
     exceptions_num += 1

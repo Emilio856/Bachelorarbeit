@@ -59,7 +59,7 @@ def get_model(model_name):
         if model_name == "alexnet":
             model = new_alexnet.alexnet()
         elif model_name == "vgg16":
-            model = new_vgg.create_vvg16()
+            model = new_vgg.create_vgg16()
         elif model_name == "vgg19":
             # model = new_vgg.create_vgg19()
             pass
