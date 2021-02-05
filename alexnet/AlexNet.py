@@ -36,7 +36,7 @@ channels = 3
 
 # Model architecture from:
 # https://papers.nips.cc/paper/2012/file/c399862d3b9d6b76c8436e924a68c45b-Paper.pdf
-def alexnet(lr, drop1, drop2, loss1, loss2):
+def alexnet(lr,loss1, loss2):
     # Learning rate as exponent
     lr = 1 / np.power(10, lr)
 

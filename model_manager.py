@@ -29,6 +29,7 @@ import inception.new_inception
 import mobilenet_v3.new_mobilenet_v3
 import resnet.new_resnet_v2
 import xception.new_xception"""
+import xception.new_xception
 
 
 available_models = [
@@ -109,7 +110,7 @@ def get_model(model_name):
             # model = new_resnet_v2.init_resnet152v2()
             pass
         elif model_name == "xception":
-            # model = new_xception.init_xception()
+            model = new_xception.init_xception()
             pass
         else:
             print("Error, spelling mistake in model name")

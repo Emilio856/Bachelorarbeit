@@ -29,9 +29,7 @@ from tensorflow.keras.preprocessing import image
 
 # Model from:
 # https://arxiv.org/pdf/1610.02357.pdf
-def init_xception(hidden):
-    lr = 1 / np.power(10, lr)
-
+def init_xception():
     base_xception = tf.keras.applications.Xception(input_shape=(450, 450, 3),
                                                    include_top=False, weights="imagenet")
 
@@ -39,7 +37,7 @@ def init_xception(hidden):
     x = tf.keras.layers.Flatten()(x)
     x = tf.keras.layers.Dropout(0.5)(x)
 
-    x = tf.keras.layers.Dense(hidden, activation="elu")(x)
+    x = tf.keras.layers.Dense(512, activation="elu")(x)
 
     output_layer = tf.keras.layers.Dense(1)(x)
     xception_model = tf.keras.Model(inputs=base_xception.input, outputs=output_layer)

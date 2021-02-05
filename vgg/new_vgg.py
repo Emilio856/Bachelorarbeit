@@ -24,7 +24,7 @@ from tensorflow.keras.layers.experimental import preprocessing
 
 # Models from:
 # https://arxiv.org/pdf/1409.1556.pdf
-def create_vvg16():
+def create_vgg16():
     base_vgg = tf.keras.applications.VGG16(input_shape=(450, 450, 3), include_top=False, weights="imagenet")
     x = base_vgg.output
     x = tf.keras.layers.Flatten()(x)
