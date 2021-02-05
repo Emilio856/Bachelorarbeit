@@ -164,21 +164,20 @@ def init_efficientnet_b7():
 
     return b7_model
 
-"""
+
 efficientnet_b0 = init_efficientnet_b0()
 efficientnet_b1 = init_efficientnet_b1()
 efficientnet_b2 = init_efficientnet_b2()
-efficientnet_b3 = init_efficientnet_b3()"""
+efficientnet_b3 = init_efficientnet_b3()
 efficientnet_b4 = init_efficientnet_b4()
 efficientnet_b5 = init_efficientnet_b5()
 efficientnet_b6 = init_efficientnet_b6()
 efficientnet_b7 = init_efficientnet_b7()
 
-
-"""efficientnet_b0.save("efficientnet\\efficientnet_b0_model")
+efficientnet_b0.save("efficientnet\\efficientnet_b0_model")
 efficientnet_b1.save("efficientnet\\efficientnet_b1_model")
 efficientnet_b2.save("efficientnet\\efficientnet_b2_model")
-efficientnet_b3.save("efficientnet\\efficientnet_b3_model")"""
+efficientnet_b3.save("efficientnet\\efficientnet_b3_model")
 efficientnet_b4.save("efficientnet\\efficientnet_b4_model")
 efficientnet_b5.save("efficientnet\\efficientnet_b5_model")
 efficientnet_b6.save("efficientnet\\efficientnet_b6_model")
