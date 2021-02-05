@@ -24,11 +24,12 @@ from tensorflow.keras.layers.experimental import preprocessing
 img_height = 450
 img_width = 450
 channels = 3
-
+drop = 0.5
+hidden = 512
 
 # EfficientNet Models from:
 # https://arxiv.org/pdf/1905.11946.pdf
-def init_efficientnet_b0(lr, hidden, drop):
+def init_efficientnet_b0():
 
     base_b0 = tf.keras.applications.EfficientNetB0(input_shape=(img_height, img_width, channels),
                                                    include_top=False, weights="imagenet")
@@ -45,7 +46,7 @@ def init_efficientnet_b0(lr, hidden, drop):
     return b0_model
 
 
-def init_efficientnet_b1(lr, hidden, drop):
+def init_efficientnet_b1():
 
     base_b1 = tf.keras.applications.EfficientNetB1(input_shape=(img_height, img_width, channels),
                                                    include_top=False, weights="imagenet")
@@ -62,7 +63,7 @@ def init_efficientnet_b1(lr, hidden, drop):
     return b1_model
 
 
-def init_efficientnet_b2(lr, hidden, drop):
+def init_efficientnet_b2():
 
     base_b2 = tf.keras.applications.EfficientNetB2(input_shape=(img_height, img_width, channels),
                                                    include_top=False, weights="imagenet")
@@ -79,7 +80,7 @@ def init_efficientnet_b2(lr, hidden, drop):
     return b2_model
 
 
-def init_efficientnet_b3(lr, hidden, drop):
+def init_efficientnet_b3():
 
     base_b3 = tf.keras.applications.EfficientNetB3(input_shape=(img_height, img_width, channels),
                                                    include_top=False, weights="imagenet")
@@ -96,7 +97,7 @@ def init_efficientnet_b3(lr, hidden, drop):
     return b3_model
 
 
-def init_efficientnet_b4(lr, hidden, drop):
+def init_efficientnet_b4():
 
     base_b4 = tf.keras.applications.EfficientNetB4(input_shape=(img_height, img_width, channels),
                                                    include_top=False, weights="imagenet")
@@ -113,7 +114,7 @@ def init_efficientnet_b4(lr, hidden, drop):
     return b4_model
 
 
-def init_efficientnet_b5(lr, hidden, drop):
+def init_efficientnet_b5():
 
     base_b5 = tf.keras.applications.EfficientNetB5(input_shape=(img_height, img_width, channels),
                                                    include_top=False, weights="imagenet")
@@ -130,7 +131,7 @@ def init_efficientnet_b5(lr, hidden, drop):
     return b5_model
 
 
-def init_efficientnet_b6(lr, hidden, drop):
+def init_efficientnet_b6():
 
     base_b6 = tf.keras.applications.EfficientNetB6(input_shape=(img_height, img_width, channels),
                                                    include_top=False, weights="imagenet")
@@ -147,7 +148,7 @@ def init_efficientnet_b6(lr, hidden, drop):
     return b6_model
 
 
-def init_efficientnet_b7(lr, hidden, drop):
+def init_efficientnet_b7():
 
     base_b7 = tf.keras.applications.EfficientNetB7(input_shape=(img_height, img_width, channels),
                                                    include_top=False, weights="imagenet")
@@ -162,3 +163,23 @@ def init_efficientnet_b7(lr, hidden, drop):
     b7_model = tf.keras.Model(inputs=base_b7.input, outputs=output_layer)
 
     return b7_model
+
+"""
+efficientnet_b0 = init_efficientnet_b0()
+efficientnet_b1 = init_efficientnet_b1()
+efficientnet_b2 = init_efficientnet_b2()
+efficientnet_b3 = init_efficientnet_b3()"""
+efficientnet_b4 = init_efficientnet_b4()
+efficientnet_b5 = init_efficientnet_b5()
+efficientnet_b6 = init_efficientnet_b6()
+efficientnet_b7 = init_efficientnet_b7()
+
+
+"""efficientnet_b0.save("efficientnet\\efficientnet_b0_model")
+efficientnet_b1.save("efficientnet\\efficientnet_b1_model")
+efficientnet_b2.save("efficientnet\\efficientnet_b2_model")
+efficientnet_b3.save("efficientnet\\efficientnet_b3_model")"""
+efficientnet_b4.save("efficientnet\\efficientnet_b4_model")
+efficientnet_b5.save("efficientnet\\efficientnet_b5_model")
+efficientnet_b6.save("efficientnet\\efficientnet_b6_model")
+efficientnet_b7.save("efficientnet\\efficientnet_b7_model")
