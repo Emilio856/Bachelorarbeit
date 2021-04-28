@@ -1,82 +1,118 @@
-import cv2
-import glob
-import matplotlib.pyplot as plt
+# for reproducibility
 import numpy as np
-import pandas as pd
-import os
-import pathlib
-import pickle
-import csv
-import time
+np.random.seed(42)
 import tensorflow as tf
-from tensorflow import keras
+tf.random.set_seed(42)
+import random as rn
+rn.seed(42)
+
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
+import joblib
+import os
+import gc
+
 from datetime import datetime
-from sklearn.base import TransformerMixin
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from sklearn.experimental import enable_iterative_imputer
-from sklearn.impute import IterativeImputer
-from sklearn.metrics import mean_squared_error
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.model_selection import KFold
-from sklearn.model_selection import cross_val_score
-from skopt import gp_minimize, plots, space
-from skopt.utils import use_named_args
-from NDStandardScaler import NDStandardScaler
-from keras.callbacks import TensorBoard
-from keras.preprocessing import image
+from sklearn.metrics import mean_absolute_error
 
 
-# Input data
-batch_size = 32
-img_height = 600
-img_width = 200
-channels = 3
+device = tf.config.experimental.list_physical_devices("GPU")
+tf.config.experimental.set_memory_growth(device[0], enable=True)
+
+
+def decode_image(image):
+    image = tf.image.decode_png(image, channels=3)
+    image = tf.cast(image, tf.float32)
+    image = image / 255.0
+    image = tf.reshape(image, [450, 450, 3])
+
+    return image
+
+def read_tfrecord(example):
+    tfrecord_format = (
+        {
+            "img": tf.io.FixedLenFeature([], tf.string),
+            "label": tf.io.FixedLenFeature([], tf.float32)
+        }
+    )
+    example = tf.io.parse_single_example(example, tfrecord_format)
+    image = decode_image(example["img"])
+    label = tf.cast(example["label"], tf.float32)
+    return image, label
+
+def load_dataset(filenames):
+    dataset = tf.data.TFRecordDataset(filenames)
+    dataset = dataset.map(read_tfrecord, num_parallel_calls=20)
+    return dataset
+
+def get_dataset(filenames):
+    # with tf.device("/cpu"):
+    dataset = load_dataset(filenames)
+    dataset = dataset.shuffle(len(list(dataset)), seed=42)
+    dataset = dataset.batch(8, drop_remainder=True)
+    #dataset = dataset.cache()
+    #dataset = dataset.prefetch(1)
+    return dataset
+
+os.chdir(".")
+print(os.getcwd())
+gc.collect()
+train_dataset = get_dataset("train.tfrecords")
+val_dataset = get_dataset("val.tfrecords")
+gc.collect()
+
+
+run_id = datetime.now().strftime("AlexNet %Y_%m_%d T %H-%M-%S")
+logdir = f"logs/{run_id}"
+
+# Early Stopping
+callback1 = tf.keras.callbacks.EarlyStopping(
+    monitor="val_loss",
+    patience=200,
+    mode="min",
+    restore_best_weights=True,
+    verbose=1
+)
+
+# Uses Tensorboard to monitor training
+callback2 = tf.keras.callbacks.TensorBoard(
+    log_dir=logdir,
+    write_graph=True,
+    write_images=True
+)
 
 
 # Model architecture from:
 # https://papers.nips.cc/paper/2012/file/c399862d3b9d6b76c8436e924a68c45b-Paper.pdf
-def alexnet(lr,loss1, loss2):
-    # Learning rate as exponent
-    lr = 1 / np.power(10, lr)
-
+def make_model():
     model = tf.keras.models.Sequential([
         # First Convolutional layer
-        tf.keras.layers.Conv2D(filters=96, kernel_size=(11, 11), strides=(4, 4), activation="relu",
-                               input_shape=(img_height, img_width, channels), padding="same",
-                               kernel_regularizer=tf.keras.regularizers.L1L2(loss1, loss2),
-                               bias_regularizer=tf.keras.regularizers.L1L2(loss1, loss2),
-                               activity_regularizer=tf.keras.regularizers.L1L2(loss1, loss2)),
+        tf.keras.layers.Conv2D(filters=96,kernel_size=(11, 11), strides=(4, 4), activation="relu",
+                               input_shape=(450, 450, 3), padding="same",
+                               kernel_initializer=tf.keras.initializers.GlorotUniform(seed=42)),
         tf.keras.layers.BatchNormalization(),
         tf.keras.layers.MaxPool2D(pool_size=(3, 3), strides=(2, 2), padding="valid"),
 
         # Second Convolutional layer
         tf.keras.layers.Conv2D(filters=256, kernel_size=(5, 5), strides=(1, 1), activation="relu",
-                               padding="same", kernel_regularizer=tf.keras.regularizers.L1L2(loss1, loss2),
-                               bias_regularizer=tf.keras.regularizers.L1L2(loss1, loss2),
-                               activity_regularizer=tf.keras.regularizers.L1L2(loss1, loss2)),
+                               padding="same", kernel_initializer=tf.keras.initializers.GlorotUniform(seed=42)),
         tf.keras.layers.BatchNormalization(),
         tf.keras.layers.MaxPool2D(pool_size=(3, 3), strides=(2, 2), padding="valid"),
 
         # Third Convolutional layer
         tf.keras.layers.Conv2D(filters=384, kernel_size=(3, 3), strides=(1, 1), activation="relu",
-                               padding="same", kernel_regularizer=tf.keras.regularizers.L1L2(loss1, loss2),
-                               bias_regularizer=tf.keras.regularizers.L1L2(loss1, loss2),
-                               activity_regularizer=tf.keras.regularizers.L1L2(loss1, loss2)),
+                               padding="same", kernel_initializer=tf.keras.initializers.GlorotUniform(seed=42)),
         tf.keras.layers.BatchNormalization(),
 
         # Fourth Convolutional layer
         tf.keras.layers.Conv2D(filters=384, kernel_size=(3, 3), strides=(1, 1), activation="relu",
-                               padding="same", kernel_regularizer=tf.keras.regularizers.L1L2(loss1, loss2),
-                               bias_regularizer=tf.keras.regularizers.L1L2(loss1, loss2),
-                               activity_regularizer=tf.keras.regularizers.L1L2(loss1, loss2)),
+                               padding="same", kernel_initializer=tf.keras.initializers.GlorotUniform(seed=42)),
         tf.keras.layers.BatchNormalization(),
 
         # Fifth Convolutional layer
         tf.keras.layers.Conv2D(filters=256, kernel_size=(3, 3), strides=(1, 1), activation="relu",
-                               padding="same", kernel_regularizer=tf.keras.regularizers.L1L2(loss1, loss2),
-                               bias_regularizer=tf.keras.regularizers.L1L2(loss1, loss2),
-                               activity_regularizer=tf.keras.regularizers.L1L2(loss1, loss2)),
+                               padding="same", kernel_initializer=tf.keras.initializers.GlorotUniform(seed=42)),
         tf.keras.layers.BatchNormalization(),
         tf.keras.layers.MaxPool2D(pool_size=(3, 3), strides=(2, 2), padding="valid"),
 
@@ -84,163 +120,90 @@ def alexnet(lr,loss1, loss2):
         tf.keras.layers.Flatten(),
 
         # First Fully Connected layer
-        tf.keras.layers.Dense(4096, activation="relu"),
-        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dense(4096, activation="relu", kernel_initializer=tf.keras.initializers.GlorotUniform(seed=42)),
+        tf.keras.layers.Dropout(0.5, seed=42),
 
         # Second Fully Connected layer
-        tf.keras.layers.Dense(4096, activation="relu"),
-        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dense(4096, activation="relu", kernel_initializer=tf.keras.initializers.GlorotUniform(seed=42)),
+        tf.keras.layers.Dropout(0.5, seed=42),
 
         # Third Fully Connected
-        tf.keras.layers.Dense(1, activation="softmax")
+        tf.keras.layers.Dense(1, kernel_initializer=tf.keras.initializers.GlorotUniform(seed=42))
     ])
-
-    model.compile(optimizer=tf.keras.optimizers.Adam(lr), loss=tf.keras.losses.MeanSquaredError(),
-                  metrics=["accuracy"])
-
+    model.compile(
+        tf.keras.optimizers.Adam(
+            lr=0.000001
+        ),
+        tf.keras.losses.MeanSquaredError(),
+        ["accuracy"] 
+    )
     return model
 
-    """model = tf.keras.models.Sequential([
-        tf.keras.layers.Conv2D(64, kernel_size=3, activation="relu", input_shape=(600, 200, 3)),
-        tf.keras.layers.Conv2D(32, kernel_size=3, activation="relu"),
-        tf.keras.layers.Flatten(),
-        tf.keras.layers.Dense(1, activation="softmax")
-    ])
-    model.compile(optimizer='adam', loss=tf.keras.losses.MeanSquaredError(), metrics=['accuracy'])
-    return model"""
+
+model = make_model()
+model.summary()
+
+# Add regularizer with l1 and l2 norm
+model.trainable = True
+regularizer = tf.keras.regularizers.l1_l2()
+for layer in model.layers:
+    for attr in ["kernel_regularizer"]:
+        if hasattr(layer, attr):
+            setattr(layer, attr, regularizer)
+
+history = model.fit(
+    train_dataset,
+    epochs=450,
+    validation_data=val_dataset,
+    shuffle=False,
+    callbacks=[callback1, callback2]
+)
 
 
-# Search space for the hyperparameter optimization
-search_space = [space.Real(2, 6, name='lr'),   # 1e-7, 1e-2   # Consider lr between 10^-6 and 1
-                space.Real(0, 0.7, name='drop1'),
-                space.Real(0, 0.7, name='drop2'),
-                space.Real(0, 0.15, name='loss1'),
-                space.Real(0, 0.15, name='loss2'),
-                space.Integer(1, 32, name='batch_size')]
+# summarize history for accuracy
+plt.plot(history.history["accuracy"])
+plt.plot(history.history["val_accuracy"])
+plt.title("model accuracy")
+plt.ylabel("accuracy")
+plt.xlabel("epoch")
+plt.legend(["train", "val"], loc="upper left")
+plt.savefig(os.path.join(logdir, "accuracy.png"), dpi=500)
+plt.close()
+# summarize history for loss
+plt.plot(history.history["loss"])
+plt.plot(history.history["val_loss"])
+plt.title("model loss")
+plt.ylabel("loss")
+plt.xlabel("epoch")
+plt.legend(["train", "val"], loc="upper left")
+plt.savefig(os.path.join(logdir, "loss.png"), dpi=500)
 
+model.save(os.path.join(logdir, "AlexNet"))
 
-# Splits the data to create the test and validation sets and trains the model. Evaluates a given Configuration and
-# creates a .txt file that stores the current values of the parameters after every iteration. Returns the minimal
-# reached loss across all iterations.
-@use_named_args(search_space)
-def evaluate_func(**kwargs):
-    model = tf.keras.wrappers.scikit_learn.KerasRegressor(build_fn=alexnet, epochs=2)
-    model.set_params(**kwargs)
+test_dataset = get_dataset("test.tfrecords")
+score = model.evaluate(test_dataset)
 
-    x_train, x_test, y_train, y_test = train_test_split(x_data, y_data, test_size=0.33, random_state=42)
+with open(os.path.join(logdir, "evaluation.txt"), "a") as f:
+    f.write(f"Final training results after {history.epoch[-1] + 1} epochs:\n")
+    values = list(history.history.values())
 
-    # x_train = np.random.random((10, 600, 200, 3))
-    # x_test = np.random.random((5, 600, 200, 3))
-    #y_train = np.random.random((10,))
-    #y_test = np.random.random((5,))
-
-    """y_test = tf.convert_to_tensor(y_test, np.float32)
-    y_train = tf.convert_to_tensor(y_train, np.float32)
-    x_test = tf.convert_to_tensor(x_test, np.float32)
-    x_train = tf.convert_to_tensor(x_train, np.float32)"""
-
-    fit_model = model.fit(x_train, y_train, validation_split=0.2, callbacks=[callb, callb2], shuffle=True)
-
-    score = mean_squared_error(y_test, model.predict(x_test))
-    print("score", score)
-
-    # eval_model = model.evaluate(x_test, y_test)
-
-    min_loss = np.min(fit_model.history['val_loss'][-21:-1])  # [-21:-1]         # history.history
-    f = open(logdir + 'out.txt', 'a')
-    f.write(str(model.sk_params['batch_size']) + ' ,' + str(min_loss) + '\n')
-    f.close()
-    return min_loss
-
-
-# Plot and save current data status. Gets called after each completed parameter set
-def plotting(results):
-    fig1 = plt.figure(1)
-    ax1 = plt.axes()
-    plots.plot_convergence(results)
-    plt.savefig(logdir + 'convergence.png', dpi=500)
-    plt.close()
-    fig2 = plt.figure(1)
-    ax2 = plt.axes()
-    plots.plot_evaluations(results)
-    plt.savefig(logdir + 'eval.png', dpi=500)
-    plt.close()
-    # plot_objective can only be called if the parameters are being calculated instead of selected randomly
-    if len(results.models) > 1:
-        fig3 = plt.figure(3)
-        ax3 = plt.axes()
-        plots.plot_objective(results)
-        plt.savefig(logdir + 'objective.png', dpi=500)
-        plt.close()
-    filename = logdir + 'gp_min.sav'
-    pickle.dump(results, open(filename, 'wb'))
-
-
-NAME = f"Just a Testfile{int(time.time())}"
-tensorboard = TensorBoard(log_dir=f"logs/{NAME}")
-
-run_id = datetime.now().strftime("AlexNet %Y_%m_%d T %H-%M-%S")
-# logdir = 'C://Users//emili//Desktop//Python//Bachelorarbeit Code//AlexNet//' + run_id   # TODO dir
-os.chdir("..")
-logdir = os.getcwd() + "//" + run_id
-# directory = "C://Users//emili//Desktop//Python//Bachelorarbeit Code"
-os.mkdir(logdir)
-logdir = logdir + "//"
-
-x_data = list()
-y_data = list()
-
-
-labels = csv.reader(open("Aufnahmen Test//Labels2.csv"), "excel", delimiter=";")
-
-next(labels, None)
-y_data2 = list()
-for row in labels:
-    y_data2.append(float(row[1]))
-numImg = len(y_data2)
-counter = 0
-
-for img in glob.glob("C://Users//emili//Desktop//Python//Bachelorarbeit Code//Aufnahmen Test//*.png"):   # TODO relative Pfad
-# print(os.getcwd())
-# print(os.path.abspath(os.curdir))
-# os.chdir("../Aufnahmen Test")
-# for img in os.getcwd() + "//*.png":
-    x_data.append(image.img_to_array(cv2.imread(img)))
-    y_data.append(y_data2[counter])
-    counter += 1
-
-# Convert images to numpy array and normalize them
-x_data = np.asarray(x_data)
-y_data = np.array(y_data)
-
-
-scaler = NDStandardScaler()
-scaler.fit(x_data)
-x_data = scaler.transform(x_data)
-
-imp = IterativeImputer()
-y_data = np.array(y_data).reshape(-1, 1)
-
-# MinMaxScaler
-mnscaler = MinMaxScaler()
-y_data = mnscaler.fit_transform(imp.fit_transform(y_data))
-
-
-# Label log file
-h = open(logdir + 'out.txt', 'a')
-h.write('lr,drop,drop2,loss1,loss2,batch size,min loss\n')
-h.close()
-
-# Early Stopping
-callb = tf.keras.callbacks.EarlyStopping(monitor="val_loss", min_delta=0.01, patience=20, mode="min",
-                                         restore_best_weights=True)
-
-# Uses Tensorboard to monitor training
-callb2 = tf.keras.callbacks.TensorBoard(log_dir=logdir, histogram_freq=10, write_graph=False)
-
-# Starts optimization
-# n_calls are number of diferent parameter sets
-result = gp_minimize(evaluate_func, search_space, n_calls=10, n_jobs=1, verbose=True, acq_func="gp_hedge",
-                     acq_optimizer="auto", callback=[plotting])  # , callback=[tensorboard]
-
-print("Best Accuracy: %  3f" % (1.0 - result.fun))
+    loss = values[0][-1]
+    acc = values[1][-1]
+    val_loss = values[2][-1]
+    val_acc = values[3][-1]
+    f.write(f"accuracy: {acc}\n")
+    f.write(f"loss: {loss}\n")
+    f.write(f"val_accuracy: {val_acc}\n")
+    f.write(f"val_loss: {val_loss}\n\n")
+    f.write(f"Test loss: {score[0]} / Test accuracy: {score[1]}\n\n\n")
+    
+    for i in range(len(values[0])):
+        loss = values[0][i]
+        acc = values[1][i]
+        val_loss = values[2][i]
+        val_acc = values[3][i]
+        f.write(f"Epoch {i + 1}:\n")
+        f.write(f"accuracy: {acc}\n")
+        f.write(f"loss: {loss}\n")
+        f.write(f"val_accuracy: {val_acc}\n")
+        f.write(f"val_loss: {val_loss}\n\n")

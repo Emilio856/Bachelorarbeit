@@ -15,10 +15,21 @@ aug_labels_path = "C:\\Users\\uffie\\bwSyncAndShare\\Bachelorarbeit-master\\Bach
 
 new_path_cropped = "..\\Cropped"
 new_path_aug = "..\\Augmented180"
+
 harris_path_cropped = "..\\Cropped\\HarrisCorner"
 harris_path_aug = "..\\Augmented180\\HarrisCorner"
+
 clahe_path_cropped = "..\\Cropped\\CLAHE"
 clahe_path_aug = "..\\Augmented180\\CLAHE"
+
+clahe_grad_path_cropped = "..\\Cropped\\clahe_gradient"
+clahe_grad_path_aug = "..\\Augmented180\\clahe_gradient"
+
+clahe_eq_path_cropped = "..\\Cropped\\clahe_equalized"
+clahe_eq_path_aug = "..\\Augmented180\\clahe_equalized"
+
+normal_path_cropped = "..\\Cropped\\normal"
+normal_path_aug = "..\\Augmented180\\normal"
 
 folders = [
     "iteration_0_30grad",
@@ -92,8 +103,55 @@ def clahe(path_to_img):
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
     cl1 = clahe.apply(gray)
     cl1 = np.float32(cl1)
+    cl1 = cv2.cvtColor(cl1, cv2.COLOR_GRAY2BGR)
 
     return cl1
+
+def clahe_equalized(path_to_img):
+    img = cv2.imread(path_to_img)
+    img = equalize_light(img)
+
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    gray = cv2.equalizeHist(gray)
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    cl1 = clahe.apply(gray)
+    cl1 = np.float32(cl1)
+    cl1 = cv2.cvtColor(cl1, cv2.COLOR_GRAY2BGR)
+
+    return cl1
+
+def normal(path_to_img):
+    img = cv2.imread(path_to_img)
+    return img
+
+def equalize_light(image, limit=3, grid=(7,7), gray=False):
+    if (len(image.shape) == 2):
+        image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+        gray = True
+    
+    clahe = cv2.createCLAHE(clipLimit=limit, tileGridSize=grid)
+    lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
+    l, a, b = cv2.split(lab)
+
+    cl = clahe.apply(l)
+    limg = cv2.merge((cl,a,b))
+
+    image = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
+    if gray: 
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    return np.uint8(image)
+
+def clahe_gradient(path_to_img):
+    img = cv2.imread(path_to_img)
+    img = equalize_light(img, gray=True)
+    
+    kernel = np.ones((3,3),np.uint8)
+    closing = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel)
+    gradient = cv2.morphologyEx(closing, cv2.MORPH_GRADIENT, kernel)
+    gradient = cv2.cvtColor(gradient, cv2.COLOR_GRAY2BGR)
+    return gradient
+
 
 print("Creating main directories...")
 os.mkdir(new_path_cropped)
@@ -102,6 +160,12 @@ os.mkdir(harris_path_cropped)
 os.mkdir(harris_path_aug)
 os.mkdir(clahe_path_cropped)
 os.mkdir(clahe_path_aug)
+os.mkdir(clahe_grad_path_cropped)
+os.mkdir(clahe_grad_path_aug)
+os.mkdir(clahe_eq_path_cropped)
+os.mkdir(clahe_eq_path_aug)
+os.mkdir(normal_path_cropped)
+os.mkdir(normal_path_aug)
 
 
 # For normal cropped images
@@ -110,6 +174,12 @@ for folder in folders:
     folder_path = os.path.join(harris_path_cropped, folder)
     os.mkdir(folder_path)
     folder_path = os.path.join(clahe_path_cropped, folder)
+    os.mkdir(folder_path)
+    folder_path = os.path.join(clahe_grad_path_cropped, folder)
+    os.mkdir(folder_path)
+    folder_path = os.path.join(clahe_eq_path_cropped, folder)
+    os.mkdir(folder_path)
+    folder_path = os.path.join(normal_path_cropped, folder)
     os.mkdir(folder_path)
 
 with open(labels_path) as f:
@@ -133,8 +203,15 @@ for i, session in enumerate(folders):
         else:
             harris_img = harris_corner(os.path.join(path_cropped, session, image))
             clahe_img = clahe(os.path.join(path_cropped, session, image))
+            clahe_grad_img = clahe_gradient(os.path.join(path_cropped, session, image))
+            clahe_eq_img = clahe_equalized(os.path.join(path_cropped, session, image))
+            normal_img = normal(os.path.join(path_cropped, session, image))
+
             cv2.imwrite(os.path.join(harris_path_cropped, session, image), harris_img)
             cv2.imwrite(os.path.join(clahe_path_cropped, session, image), clahe_img)
+            cv2.imwrite(os.path.join(clahe_grad_path_cropped, session, image), clahe_grad_img)
+            cv2.imwrite(os.path.join(clahe_eq_path_cropped, session, image), clahe_eq_img)
+            cv2.imwrite(os.path.join(normal_path_cropped, session, image), normal_img)
 
 
 # For 180° augmented images
@@ -143,6 +220,12 @@ for folder in folders:
     folder_path = os.path.join(harris_path_aug, folder)
     os.mkdir(folder_path)
     folder_path = os.path.join(clahe_path_aug, folder)
+    os.mkdir(folder_path)
+    folder_path = os.path.join(clahe_grad_path_aug, folder)
+    os.mkdir(folder_path)
+    folder_path = os.path.join(clahe_eq_path_aug, folder)
+    os.mkdir(folder_path)
+    folder_path = os.path.join(normal_path_aug, folder)
     os.mkdir(folder_path)
 
 with open(aug_labels_path) as f:
@@ -166,7 +249,14 @@ for i, session in enumerate(folders):
         else:
             harris_img = harris_corner(os.path.join(path_augmented, session, image))
             clahe_img = clahe(os.path.join(path_augmented, session, image))
+            clahe_grad_img = clahe_gradient(os.path.join(path_augmented, session, image))
+            clahe_eq_img = clahe_equalized(os.path.join(path_augmented, session, image))
+            normal_img = normal(os.path.join(path_augmented, session, image))
+
             cv2.imwrite(os.path.join(harris_path_aug, session, image), harris_img)
             cv2.imwrite(os.path.join(clahe_path_aug, session, image), clahe_img)
+            cv2.imwrite(os.path.join(clahe_grad_path_aug, session, image), clahe_grad_img)
+            cv2.imwrite(os.path.join(clahe_eq_path_aug, session, image), clahe_eq_img)
+            cv2.imwrite(os.path.join(normal_path_aug, session, image), normal_img)
 
 print("Done")

@@ -1,3 +1,6 @@
+# From https://github.com/kentsommer/keras-inceptionV4
+# Modified a few things and adjusted some parts
+
 '''
 Copyright 2017 TensorFlow Authors and Kent Sommer
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -57,10 +60,8 @@ def conv2d_bn(x, nb_filter, num_row, num_col,
     x = Convolution2D(nb_filter, (num_row, num_col),
                       strides=strides,
                       padding=padding,
-                      use_bias=use_bias,
-                      kernel_regularizer=regularizers.l2(0.00004),
-                      kernel_initializer=initializers.VarianceScaling(scale=2.0, mode='fan_in', distribution='normal', seed=None))(x)
-    x = BatchNormalization(axis=channel_axis, momentum=0.9997, scale=False)(x)
+                      use_bias=use_bias)(x)
+    x = BatchNormalization(axis=channel_axis)(x)
     x = Activation('relu')(x)
     return x
 
@@ -246,12 +247,8 @@ def inception_v4(num_classes, dropout_keep_prob, weights, include_top):
     Returns: 
     	logits: the logits outputs of the model.
     '''
-
-    # Input Shape is 299 x 299 x 3 (tf) or 3 x 299 x 299 (th)
-    if K.image_data_format() == 'channels_first':
-        inputs = Input((3, 299, 299))
-    else:
-        inputs = Input((299, 299, 3))
+    
+    inputs = Input((450, 450, 3))
 
     # Make inception base
     x = inception_v4_base(inputs)

@@ -1,175 +1,174 @@
-import cv2
-import glob
-import matplotlib.pyplot as plt
+# for reproducibility
 import numpy as np
-import pandas as pd
-import os
-import pathlib
-import pickle
-import csv
-import time
+np.random.seed(42)
 import tensorflow as tf
-import tensorflow.keras
+tf.random.set_seed(42)
+import random as rn
+rn.seed(42)
+
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
+import joblib
+import os
+import gc
+
 from datetime import datetime
-from sklearn.base import TransformerMixin
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from sklearn.experimental import enable_iterative_imputer
-from sklearn.impute import IterativeImputer
-from sklearn.metrics import mean_squared_error
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.model_selection import KFold
-from sklearn.model_selection import cross_val_score
-from skopt import gp_minimize, plots, space
-from skopt.utils import use_named_args
-from NDStandardScaler import NDStandardScaler
-from tensorflow.keras.callbacks import TensorBoard
-from tensorflow.keras.preprocessing import image
 
 
-# Input data
-batch_size = 32
-img_height = 600
-img_width = 200
-channels = 3
+device = tf.config.experimental.list_physical_devices("GPU")
+tf.config.experimental.set_memory_growth(device[0], enable=True)
 
 
-# Model from:
-# https://arxiv.org/pdf/1610.02357.pdf
-def init_xception(lr, hidden, drop):
-    lr = 1 / np.power(10, lr)
+def decode_image(image):
+    image = tf.image.decode_png(image, channels=3)
+    image = tf.cast(image, tf.float32)
+    image = image / 255.0
+    image = tf.reshape(image, [450, 450, 3])
 
-    base_xception = tf.keras.applications.Xception(input_shape=(img_height, img_width, channels),
-                                                   include_top=False, weights="imagenet")
+    return image
+
+def read_tfrecord(example):
+    tfrecord_format = (
+        {
+            "img": tf.io.FixedLenFeature([], tf.string),
+            "label": tf.io.FixedLenFeature([], tf.float32)
+        }
+    )
+    example = tf.io.parse_single_example(example, tfrecord_format)
+    image = decode_image(example["img"])
+    label = tf.cast(example["label"], tf.float32)
+    return image, label
+
+def load_dataset(filenames):
+    dataset = tf.data.TFRecordDataset(filenames)
+    dataset = dataset.map(read_tfrecord, num_parallel_calls=20)
+    return dataset
+
+def get_dataset(filenames):
+    dataset = load_dataset(filenames)
+    dataset = dataset.shuffle(len(list(dataset)), seed=42)
+    dataset = dataset.batch(8, drop_remainder=True)
+    #dataset = dataset.cache()
+    #dataset = dataset.prefetch(1)
+    return dataset
+
+os.chdir(".")
+print(os.getcwd())
+gc.collect()
+train_dataset = get_dataset("train.tfrecords")
+val_dataset = get_dataset("val.tfrecords")
+gc.collect()
+
+
+run_id = datetime.now().strftime("Xception %Y_%m_%d T %H-%M-%S")
+logdir = f"logs/{run_id}"
+
+# Early Stopping
+callback1 = tf.keras.callbacks.EarlyStopping(
+    monitor="val_loss",
+    patience=35,
+    min_delta=0.0001,
+    mode="min",
+    restore_best_weights=True,
+    verbose=1
+)
+
+# Uses Tensorboard to monitor training
+callback2 = tf.keras.callbacks.TensorBoard(
+    log_dir=logdir,
+    write_graph=True,
+    write_images=True
+)
+
+
+def make_model():
+
+    base_xception = tf.keras.applications.Xception(input_shape=(450, 450, 3), include_top=False, weights="imagenet", pooling="avg")
 
     x = base_xception.output
-    x = tf.keras.layers.Flatten()(x)
-    x = tf.keras.layers.Dropout(drop)(x)
-
-    x = tf.keras.layers.Dense(hidden, activation="elu")(x)
-
-    output_layer = tf.keras.layers.Dense(1)(x)
+    x = tf.keras.layers.Dropout(0.5, seed=42)(x)
+    
+    output_layer = tf.keras.layers.Dense(1, kernel_initializer=tf.keras.initializers.GlorotUniform(seed=42))(x)
     xception_model = tf.keras.Model(inputs=base_xception.input, outputs=output_layer)
-
-    xception_model.compile(tf.keras.optimizers.Adam(lr=lr), tf.keras.losses.MeanSquaredError(), ["mae", "accuracy"])
+    xception_model.compile(
+        tf.keras.optimizers.Adam(
+            lr=0.000001
+        ),
+        tf.keras.losses.MeanSquaredError(),
+        ["accuracy"]    
+    )
+    
     return xception_model
 
 
-search_space = [space.Real(2.5, 5.5, name='lr'),
-                space.Integer(200, 1000, name='hidden'),
-                space.Real(0, 0.7, name='drop'),
-                space.Integer(1, 32, name='batch_size')]
+model = make_model()
+
+# Add regularizer with l1 and l2 norm
+model.trainable = True
+regularizer = tf.keras.regularizers.l1_l2()
+for layer in model.layers:
+    for attr in ["kernel_regularizer"]:
+        if hasattr(layer, attr):
+            setattr(layer, attr, regularizer)
 
 
-#Funktion, die von gp_minimize aufgerufen wird. Enthält die fit Funktion
-@use_named_args(search_space)
-def evaluate_func(**kwargs):
-
-    model = tf.keras.wrappers.scikit_learn.KerasRegressor(build_fn=init_xception,epochs=2)
-    model.set_params(**kwargs)
-
-    x_train, x_test, y_train, y_test = train_test_split(x_data, y_data, test_size=0.33, random_state=42)
-    y_train = np.random.random((10,1))
-    y_test = np.random.random((5,1))
+history = model.fit(
+    train_dataset,
+    epochs=300,
+    validation_data=val_dataset,
+    shuffle=False,
+    callbacks=[callback1, callback2]   # callback3 missing
+)
 
 
-    #Fit model
-    history = model.fit(x_train, y_train, validation_split=0.2,callbacks=[callb,callb2],shuffle=True)
-    minloss = np.min(history.history['val_mae'][-11:-1])
-	#logging des Ergebnis 
-    f = open(logdir+'out.csv','a')
-    f.write(str(model.sk_params['batch_size'])+','+str(minloss)+'\n')
-    f.close()
-    return minloss
-
-#Plots und aktuellen Stand der Optmierung nach jedem Parametersatz speichern
-def plotting(results):
-    fig1 = plt.figure(1)
-    ax1 = plt.axes()
-    plots.plot_convergence(results)
-    plt.savefig(logdir+'convergence.png',dpi=500)
-    plt.close()
-    fig2 = plt.figure(1)
-    ax2 = plt.axes()
-    plots.plot_evaluations(results)
-    plt.savefig(logdir+'eval.png',dpi=500)
-    plt.close()
-	#plot_objective kann nur aufgerufen werden, sobald die Parameter berechnet und nicht mehr zufällig gewählt sind
-    if len(results.models) > 1:
-        fig3 = plt.figure(3)
-        ax3 = plt.axes()
-        plots.plot_objective(results)
-        plt.savefig(logdir+'objective.png',dpi=500)
-        plt.close()
-    filename = logdir+'gp_min.sav'
-    pickle.dump(results, open(filename, 'wb'))
+# summarize history for accuracy
+plt.plot(history.history["accuracy"])
+plt.plot(history.history["val_accuracy"])
+plt.title("model accuracy")
+plt.ylabel("accuracy")
+plt.xlabel("epoch")
+plt.legend(["train", "val"], loc="upper left")
+plt.savefig(os.path.join(logdir, "accuracy.png"), dpi=500)
+plt.close()
+# summarize history for loss
+plt.plot(history.history["loss"])
+plt.plot(history.history["val_loss"])
+plt.title("model loss")
+plt.ylabel("loss")
+plt.xlabel("epoch")
+plt.legend(["train", "val"], loc="upper left")
+plt.savefig(os.path.join(logdir, "loss.png"), dpi=500)
 
 
-NAME = f"Just a Testfile{int(time.time())}"
-tensorboard = TensorBoard(log_dir=f"logs/{NAME}")
+test_dataset = get_dataset("test.tfrecords")
+score = model.evaluate(test_dataset)
 
-run_id = datetime.now().strftime("Xception %Y_%m_%d T %H-%M-%S")
-# logdir = 'C://Users//emili//Desktop//Python//Bachelorarbeit Code//AlexNet//' + run_id   # TODO dir
-os.chdir("..")
-logdir = os.getcwd() + "//" + run_id
-# directory = "C://Users//emili//Desktop//Python//Bachelorarbeit Code"
-os.mkdir(logdir)
-logdir = logdir + "//"
+with open(os.path.join(logdir, "evaluation.txt"), "a") as f:
+    f.write(f"Final training results after {history.epoch[-1] + 1} epochs:\n")
+    values = list(history.history.values())
 
-x_data = list()
-y_data = list()
-
-
-labels = csv.reader(open("Aufnahmen Test//Labels2.csv"), "excel", delimiter=";")
-
-next(labels, None)
-y_data2 = list()
-for row in labels:
-    y_data2.append(float(row[1]))
-numImg = len(y_data2)
-counter = 0
-
-for img in glob.glob("C://Users//emili//Desktop//Python//Bachelorarbeit Code//Aufnahmen Test//*.png"):   # TODO relative Pfad
-# print(os.getcwd())
-# print(os.path.abspath(os.curdir))
-# os.chdir("../Aufnahmen Test")
-# for img in os.getcwd() + "//*.png":
-    x_data.append(image.img_to_array(cv2.imread(img)))
-    y_data.append(y_data2[counter])
-    counter += 1
-
-# Convert images to numpy array and normalize them
-x_data = np.asarray(x_data)
-y_data = np.array(y_data)
+    loss = values[0][-1]
+    acc = values[1][-1]
+    val_loss = values[2][-1]
+    val_acc = values[3][-1]
+    f.write(f"accuracy: {acc}\n")
+    f.write(f"loss: {loss}\n")
+    f.write(f"val_accuracy: {val_acc}\n")
+    f.write(f"val_loss: {val_loss}\n\n")
+    f.write(f"Test loss: {score[0]} / Test accuracy: {score[1]}\n\n\n")
+    
+    for i in range(len(values[0])):
+        loss = values[0][i]
+        acc = values[1][i]
+        val_loss = values[2][i]
+        val_acc = values[3][i]
+        f.write(f"Epoch {i + 1}:\n")
+        f.write(f"accuracy: {acc}\n")
+        f.write(f"loss: {loss}\n")
+        f.write(f"val_accuracy: {val_acc}\n")
+        f.write(f"val_loss: {val_loss}\n\n")
 
 
-scaler = NDStandardScaler()
-scaler.fit(x_data)
-x_data = scaler.transform(x_data)
+model.save(os.path.join(logdir, "Xception"))
 
-imp = IterativeImputer()
-y_data = np.array(y_data).reshape(-1, 1)
-
-# MinMaxScaler
-mnscaler = MinMaxScaler()
-y_data = mnscaler.fit_transform(imp.fit_transform(y_data))
-
-
-# Label log file
-h = open(logdir + 'out.txt', 'a')
-h.write('lr,drop,drop2,loss1,loss2,batch size,min loss\n')
-h.close()
-
-# Early Stopping
-callb = tf.keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0.01, patience=20, mode='min',
-                                         restore_best_weights=True)
-
-# Uses Tensorboard to monitor training
-callb2 = tf.keras.callbacks.TensorBoard(log_dir=logdir, histogram_freq=10, write_graph=False)
-
-# Starts optimization
-# n_calls are number of diferent parameter sets
-result = gp_minimize(evaluate_func, search_space, n_calls=10, n_jobs=1, verbose=True, acq_func='gp_hedge',
-                     acq_optimizer='auto', callback=[plotting])  # , callback=[tensorboard]
-
-print("Best Accuracy: %  3f" % (1.0 - result.fun))
