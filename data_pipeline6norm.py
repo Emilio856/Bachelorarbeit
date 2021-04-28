@@ -1,24 +1,30 @@
-import csv
+# This script creates a test, validation and training dataset as TFRecord files.
+# Thus, a continuos connection to the location of the images and labels is not
+# necessary. The data is scaled between 0 and 1 fitting a normalizer on the
+# training data and then using it on the testing and validation data.
+#
+# The variable "path" has to be specified before using this script.
+#
+# author: Emilio Rivera
+
+
 import os
 import json
-import time
 import sys
-import cv2
 import random
 import joblib
 
 import numpy as np
-import pandas as pd
 import tensorflow as tf
 
 from sklearn.preprocessing import MinMaxScaler
-from matplotlib.image import imread
 
-
-# path = "K:\\Data\\2020-12-03"
+# Replace with the path to the folder where the folders with the cropped and augmented
+# images are stored
 path = "C:\\Users\\uffie\\bwSyncAndShare\\Bachelorarbeit-master"
-img_type = "CLAHE"   # Replace!! -> CLAHE or HarrisCorner or normal or clahe_gradient
-seed = 42
+
+img_type = "CLAHE"
+rnd_seed = 42
 labels = list()
 images = list()
 my_dict = dict()
@@ -78,37 +84,31 @@ def _bytes_feature(value):
 def _float_feature(value):
     return tf.train.Feature(float_list=tf.train.FloatList(value=[value]))
 
-def encoder(row0, row1):
-    return tf.train.Example(
-        features=tf.train.Features(feature={
-            "img": _bytes_feature(row0),
-            "label": _float_feature(row1)
-        })
-    ).SerializeToString()
-
-
-def load_img(address):
-    img = cv2.imread(address)
-    #img = img / 255.0
-    #img = img.astype(np.float32)
-    return img
-
 
 def create_data_record(out_filename, paths, pick_lengths):
-    # open TFRecords file
+    """
+    Creates and stores a TFRecord file.
+
+    Args:
+      out_filename: The specified name for the file.
+      paths: Paths to the images that will be stored in the file.
+      pick_lengths: Labels belonging to the images that will be stored in the file.
+    
+    Returns:
+      A TFRecord file containing several images and labels stored as a sequence of
+      binary records.
+    """
     writer = tf.io.TFRecordWriter(out_filename)
     for i in range(len(paths)):
         # print nr of saved images every 500 images
         if not i % 500:
             print(f"Train data: {i} / {len(paths)}")
             sys.stdout.flush()
-        # img = imread(paths[i])
         image_string = open(paths[i], "rb").read()
-        # img = img / 255.0
         label = pick_lengths[i]
 
         feature = {
-            "img": _bytes_feature(image_string),   # img.encode("utf-8")   # img.tostring()
+            "img": _bytes_feature(image_string),
             "label": _float_feature(label)
         }
         example = tf.train.Example(features=tf.train.Features(feature=feature))
@@ -117,21 +117,15 @@ def create_data_record(out_filename, paths, pick_lengths):
     writer.close()
     sys.stdout.flush()
 
-
-
-print(len(images))
-print(len(labels))
-
-
+# Zip and shuffle the data
 all_data = list(zip(images, labels))
-np.random.seed(42)
+np.random.seed(rnd_seed)
 np.random.shuffle(all_data)
 images, labels = zip(*all_data)
 
 normalizer = MinMaxScaler()
 
-
-# 70% training
+# Training dataset containing 70% of the data
 train_imgs = images[0:int(0.7 * len(images))]
 train_labels = labels[0:int(0.7 * len(labels))]
 train_labels = np.array(train_labels)
@@ -141,7 +135,7 @@ train_labels = train_labels.reshape(1, -1)
 train_labels = train_labels[0].tolist()
 print("train", len(train_imgs), len(train_labels))
 
-# 15% testing
+# Validation dataset containing 15% of the data
 val_imgs = images[int(0.7 * len(images)):int(0.85 * len(images))]
 val_labels = labels[int(0.7 * len(labels)):int(0.85 * len(labels))]
 val_labels = np.array(val_labels)
@@ -151,7 +145,7 @@ val_labels = val_labels.reshape(1, -1)
 val_labels = val_labels[0].tolist()
 print("val", len(val_imgs), len(val_labels))
 
-# 15% validation
+# Testing dataset containing 15% of the data
 test_imgs = images[int(0.85 * len(images)):]
 test_labels = labels[int(0.85 * len(labels)):]
 test_labels = np.array(test_labels)
@@ -166,5 +160,5 @@ create_data_record("train.tfrecords", train_imgs, train_labels)
 create_data_record("val.tfrecords", val_imgs, val_labels)
 create_data_record("test.tfrecords", test_imgs, test_labels)
 
-
-joblib.dump(normalizer, "normalizer.save")   # load with joblift.load()
+# Save normalizer
+joblib.dump(normalizer, "normalizer.save")
