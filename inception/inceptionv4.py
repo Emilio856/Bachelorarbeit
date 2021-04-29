@@ -20,7 +20,7 @@ import os
 import gc
 
 from datetime import datetime
-from inception_v4 import create_model
+from inception_model import create_inception
 
 
 device = tf.config.experimental.list_physical_devices("GPU")
@@ -130,20 +130,8 @@ def make_model():
 
     Returns:
       An Inception v4 model.
-    """
-    base_inception = create_model(include_top=False)
-
-    x = base_inception.output
-
-    x = tf.keras.layers.GlobalAveragePooling2D()(x)
-    x = tf.keras.layers.Dropout(0.2, seed=rnd_seed)(x)
-
-    output_layer = tf.keras.layers.Dense(
-        1,
-        kernel_initializer=tf.keras.initializers.GlorotUniform(seed=rnd_seed)
-    )(x)
-    
-    inception_model = tf.keras.Model(inputs=base_inception.input, outputs=output_layer)
+    """ 
+    inception_model = create_inception()
 
 
     inception_model.compile(
