@@ -127,6 +127,7 @@ def inception_c(input):
     limb4 = tf.keras.layers.AveragePooling2D((3, 3),
                                              strides=(1, 1),
                                              padding="same")(input)
+    limb4 = conv_bn(limb4, 256, 1, 1)
     
     x = tf.keras.layers.concatenate([limb1, limb2, limb3, limb4])
     return x
@@ -244,9 +245,8 @@ def create_inception():
     inputs = tf.keras.layers.Input((450, 450, 3))
 
     x = inception(inputs)
-    x = tf.keras.layers.GlobalAveragePooling2D((8, 8),
-                                               padding="valid")(x)
-    x = tf.keras.layers.Dropout(0.2, seed=rnd_seed)
+    x = tf.keras.layers.GlobalAveragePooling2D()(x)
+    x = tf.keras.layers.Dropout(0.2, seed=rnd_seed)(x)
     x = tf.keras.layers.Dense(1,
                               kernel_initializer=tf.keras.initializers.GlorotUniform(seed=rnd_seed))(x)
 

@@ -187,7 +187,6 @@ def make_model():
 
 
 model = make_model()
-model.summary()
 
 # Add regularizer with l1 and l2 norm
 model.trainable = True
