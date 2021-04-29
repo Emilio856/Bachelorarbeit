@@ -1,3 +1,7 @@
+"""
+Helper class for visualizing labels on images
+"""
+
 import json
 import os
 import sys
@@ -203,10 +207,6 @@ class Label_Tester:
         path = os.path.join(self.json_path, self.json_file_name)
         with open(path, 'w') as f:
             json.dump(self.values, f)
-
-    """def print_deleted_imgs(self, indices, imgs):
-        for i in len(imgs):
-            print(f"Deleted label for image: {imgs[i]} in session {indices[i]}.")"""
 
     def plot_additional_content_before_first_click(self, figure):
         raise NotImplementedError()

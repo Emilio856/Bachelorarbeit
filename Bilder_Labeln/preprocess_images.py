@@ -1,3 +1,8 @@
+# This script creates various folders with the images from the dataset and applies
+# different tecniques to preprocess them.
+#
+# author: Emilio Rivera
+
 import json
 import os
 import sys
@@ -7,10 +12,16 @@ import matplotlib.pyplot as plt
 
 from PIL import Image
 
+# Replace with path to the cropped images
+path_cropped = "K:\\Data\\2020-12-03\\Debayered_images_cropped"
 
-path_cropped = "K:\\Data\\2020-12-03\\Debayered_images_cropped"   # Replace with path to Drive
+# Replace with path to the augmented images
 path_augmented = "K:\\Data\\2020-12-03\\debayered_images_cropped_augmented_180degree"
+
+# Replace with the path to the labels from the cropped images
 labels_path = "C:\\Users\\uffie\\bwSyncAndShare\\Bachelorarbeit-master\\Bachelorarbeit-master\\Bilder_Labeln\\combined_labels.json"   # Replace with path to labels
+
+# Replace with the path to the labels from the augmeted images
 aug_labels_path = "C:\\Users\\uffie\\bwSyncAndShare\\Bachelorarbeit-master\\Bachelorarbeit-master\\Bilder_Labeln\\labels_augmented_imgs.json"   # Replace with path to aug labels
 
 new_path_cropped = "..\\Cropped"
@@ -107,6 +118,7 @@ def clahe(path_to_img):
 
     return cl1
 
+# CLAHE with equalized light
 def clahe_equalized(path_to_img):
     img = cv2.imread(path_to_img)
     img = equalize_light(img)
@@ -120,10 +132,12 @@ def clahe_equalized(path_to_img):
 
     return cl1
 
+# Normal image (no preprocessing)
 def normal(path_to_img):
     img = cv2.imread(path_to_img)
     return img
 
+# Equalize light on the image
 def equalize_light(image, limit=3, grid=(7,7), gray=False):
     if (len(image.shape) == 2):
         image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
@@ -142,6 +156,7 @@ def equalize_light(image, limit=3, grid=(7,7), gray=False):
 
     return np.uint8(image)
 
+# Apply a CLAHE gradient on the image
 def clahe_gradient(path_to_img):
     img = cv2.imread(path_to_img)
     img = equalize_light(img, gray=True)

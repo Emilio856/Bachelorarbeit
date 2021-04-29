@@ -1,3 +1,8 @@
+"""
+Code was given and was modified to add two more funtions: visualize labels
+and label augmented images
+"""
+
 from math import sqrt
 
 import matplotlib.pyplot as plt

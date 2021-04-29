@@ -169,27 +169,12 @@ class Label_Augmented_Imgs:
                             )
                             self.save_dict()
                     
-                    """fig = plt.figure(fig_name)
-                    plt.imshow(img)
-                    self.plot_additional_content_before_first_click(fig)
-                    fig.canvas.mpl_connect("key_press_event", onkey)
-
-                    fig.canvas.mpl_connect("key_event", onkey)
-                    plt.grid(True)
-                    wm = plt.get_current_fig_manager()
-                    wm.window.state("zoomed")
-                    plt.show()"""
-
+                    
                     # Assign values from json file
                     labeled_x1 = combined_labels[session][image][0]
                     labeled_y1 = combined_labels[session][image][1]
                     labeled_x2 = combined_labels[session][image][2]
                     labeled_y2 = combined_labels[session][image][3]
-
-                    new_x1 = labeled_x1 - 225
-                    new_y1 = labeled_y1 - 225
-                    new_x2 = labeled_x2 - 225
-                    new_y2 = labeled_y2 - 225
 
                     fig = plt.figure(fig_name)
                     normal_img = img.rotate(180)
@@ -213,16 +198,6 @@ class Label_Augmented_Imgs:
 
                     axes.append(fig.add_subplot(1,2,2))
                     plt.imshow(rotated_img)
-                    """plt.scatter(
-                        new_x1,
-                        new_y1,
-                        color="r"
-                    )
-                    plt.scatter(
-                        new_x2,
-                        new_y2,
-                        color="r"
-                    )"""
                     plt.grid(True)
                     self.plot_additional_content_before_first_click(fig)
 
@@ -243,12 +218,6 @@ class Label_Augmented_Imgs:
             pass
 
     def add_values_to_dict(self, session, image, x1, y1, x2, y2):
-        """self.values[session][image] = (
-            self.controlling_dict['x_1'],
-            self.controlling_dict['y_1'],
-            self.controlling_dict['x_2'],
-            self.controlling_dict['y_2']
-        )"""
         self.values[session][image] = (
             x1, y1, x2, y2
         )

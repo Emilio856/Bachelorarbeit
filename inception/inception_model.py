@@ -1,3 +1,8 @@
+# This program builds the inception v4 architecture from the
+# paper https://arxiv.org/pdf/1602.07261.pdf
+#
+# author: Emilio Rivera
+
 # for reproducibility
 import numpy as np
 np.random.seed(42)
@@ -12,6 +17,20 @@ rnd_seed = 42
 
 
 def conv_bn(x, filter_nr, row_nr, col_nr, padding="same", strides=(1, 1)):
+    """
+    Convolution followed by Batch Normalization
+
+    Args:
+      x: Input.
+      filter_nr: Number of filters.
+      row_nr: Heigth of a filter.
+      col_nr: Width of a filter.
+      padding: Type of padding to use.
+      strides: Size of strides to use.
+
+    Returns:
+      A block of a Convolutional and a Batch Normalization Layer.
+    """
     x = tf.keras.layers.Convolution2D(filter_nr,
                                      (row_nr, col_nr),
                                       strides=strides,
@@ -23,6 +42,15 @@ def conv_bn(x, filter_nr, row_nr, col_nr, padding="same", strides=(1, 1)):
 
 
 def inception_a(input):
+    """
+    Builds an Inception-A-Block.
+
+    Args:
+      input: Input of the Block.
+    
+    Returns:
+      An Inception-A-Block.
+    """
     limb1 = conv_bn(input, 96, 1, 1)
 
     limb2 = conv_bn(input, 64, 1, 1)
@@ -42,6 +70,15 @@ def inception_a(input):
 
 
 def inception_b(input):
+    """
+    Builds an Inception-B-Block.
+
+    Args:
+      input: Input of the Block.
+    
+    Returns:
+      An Inception-B-Block.
+    """
     limb1 = conv_bn(input, 384, 1, 1)
 
     limb2 = conv_bn(input, 192, 1, 1)
@@ -64,6 +101,15 @@ def inception_b(input):
 
 
 def inception_c(input):
+    """
+    Builds an Inception-C-Block.
+
+    Args:
+      input: Input of the Block.
+    
+    Returns:
+      An Inception-C-Block.
+    """
     limb1 = conv_bn(input, 256, 1, 1)
 
     limb2 = conv_bn(input, 384, 1, 1)
@@ -87,6 +133,15 @@ def inception_c(input):
 
 
 def reduction_a(input):
+    """
+    Builds a Reduction-A-Block for the Inception architecture.
+
+    Args:
+      input: Input of the Block.
+    
+    Returns:
+      A Reduction-A-Block.
+    """
     limb1 = conv_bn(input, 384, 3, 3, strides=(2, 2), padding="valid")
 
     limb2 = conv_bn(input, 192, 1, 1)
@@ -100,6 +155,15 @@ def reduction_a(input):
 
 
 def reduction_b(input):
+    """
+    Builds a Reduction-B-Block for the Inception architecture.
+
+    Args:
+      input: Input of the Block.
+    
+    Returns:
+      A Reduction-B-Block.
+    """
     limb1 = conv_bn(input, 192, 1, 1)
     limb1 = conv_bn(limb1, 192, 3, 3, strides=(2, 2), padding="valid")
 
@@ -117,6 +181,15 @@ def reduction_b(input):
 
 
 def inception(input):
+    """
+    Builds the basic structure of the Inception v4 architecture.
+
+    Args:
+      input: Input of the model.
+    
+    Returns:
+      The base of Inception v4.
+    """
     stem = conv_bn(input, 32, 3, 3, strides=(2, 2), padding="valid")
     stem = conv_bn(stem, 32, 3, 3, padding="valid")
     stem = conv_bn(stem, 64, 3, 3)
@@ -147,24 +220,27 @@ def inception(input):
     stem = tf.keras.layers.concatenate([limb1, limb2])
 
     # 4 Inception A
-    for i in range(4):
+    for _ in range(4):
         stem = inception_a(stem)
 
     # Reduction A
     stem = reduction_a(stem)
 
     # 7 Inception B
-    for i in range(7):
+    for _ in range(7):
         stem = inception_b(stem)
     
     # 3 Inception C
-    for i in range(3):
+    for _ in range(3):
         stem = inception_c(stem)
     
     return stem
     
 
 def create_inception():
+    """
+    Builds a complete architecture of Inception v4 with a 450 x 450 input size
+    """
     inputs = tf.keras.layers.Input((450, 450, 3))
 
     x = inception(inputs)

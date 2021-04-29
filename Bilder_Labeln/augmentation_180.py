@@ -1,3 +1,7 @@
+# Augments images from given folders by turning them 180 degrees. 
+#
+# author: Emilio Rivera
+
 import json
 import os
 import sys
