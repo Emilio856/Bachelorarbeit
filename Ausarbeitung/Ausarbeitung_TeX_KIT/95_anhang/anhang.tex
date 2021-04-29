@@ -1,0 +1,22 @@
+\begin{table}[ht]
+\begin{center}
+\begin{tabular}{l|c|c|c}
+\textbf{Architektur} & \textbf{Fehler (Pixel)} & \textbf{Rechenzeit (ms)} & \textbf{Trainingsdauer} \\ \hline
+VGG19                & 1,764                   & 18,9                     & 15h 48m 28s             \\ \hline
+MobileNetV3 large    & 1,924                   & 8,2                      & 14h 5m 24s              \\ \hline
+ResNet101V2          & 1,988                   & 19,3                     & 18h 15m 18s             \\ \hline
+ResNet50V2           & 2,045                   & 11,9                     & 13h 24m 31s             \\ \hline
+VGG16                & 2,085                   & 16,2                     & 8h 40m 55s              \\ \hline
+MobileNetV3 small    & 2,634                   & 7,6                      & 22h 4m 32s              \\ \hline
+Xception             & 3,020                   & 12,2                     & 12h 30m 33s             \\ \hline
+EfficientNet B2      & 3,242                   & 12,3                     & 16h 56m 49s             \\ \hline
+Inception-ResNet-v2  & 3,311                   & 26,6                     & 20h 32m 46s             \\ \hline
+EfficientNet B1      & 4,206                   & 11,9                     & 10h 52m 11s             \\ \hline
+EfficientNet B0      & 5,612                   & 9,6                      & 7h 26m 50s              \\ \hline
+Inception-v4         & 6,840                   & 20,6                     & 12h 7m 27s              \\ \hline
+AlexNet              & 11,167                  & 6,6                      & 4h 55m 54s             
+\end{tabular}
+\caption{Vergleich der Trainings- und Testergebnisse aller Architekturen. Betrachtet wird der Fehler, welcher die durchschnittliche Abweichung zwischen der Netzausgabe und dem Soll-Wert darstellt, die Rechenzeit pro Bild und die gesamte Trainingsdauer der einzelnen Netze.}
+\label{Tab:vergleich-netze}
+\end{center}
+\end{table}

@@ -1,0 +1,18 @@
+Nach Angaben des Statistischen Bundesamtes starben in Deutschland im Jahre 2019 195.690 Menschen an einer Herzerkrankung \cite{destatis2}. Dies entspricht etwa ein Fünftel der Sterbefälle in diesem Jahr \cite{destatis}. Um das Risiko eines Herzinfarktes zu reduzieren, werden seit 1988 Stents eingesetzt \cite{sigwart}.
+
+\mypar Stents sind kardiovaskuläre Implantate, welche in Gefäße eingefügt werden, um eine Verstopfung bzw. ein Zusammenfallen derer zu verhindern. Aus diesem Grund muss der Stent gewisse Qualitätsanforderungen erfüllen wie zum Beispiel die geometrischen Verhältnisse dieser Spiralprothesen. Diese werden aktuell stichprobenartig nach der Herstellung durch einen Menschen mittels visueller Inspektion geprüft. Allerdings ist dieser Vorgang zeitaufwendig, für den Inspizierenden anstrengend und daher fehleranfällig. Zudem ist dieser Ablauf in der Produktion  ineffizient, weil der Stent erst nach seiner Fertigung geprüft werden kann.
+
+\mypar Um jeden Stent überprüfen zu können und den möglichen menschlichen Fehler zu beseitigen, soll der Prozess der geometrischen Inspektion automatisiert werden. Eine zur Herstellung parallel geführte Überprüfung nach Defekten würde außerdem das sofortige Ausgleichen von Ungenauigkeiten erlauben. Zudem bietet dieser Ansatz die Möglichkeit, alle Stents zu prüfen. Dementsprechend soll, basierend auf Kamerabildern und Deep Learning, ein effektives System zur Fehlererkennung in Stents entwickelt werden. 
+
+
+% Zielsetzung
+\section{Zielsetzung}\label{sec:zielsetzung-sec}
+Ziel dieser Arbeit ist die Überprüfung der Stentgeometrie anhand der Picklängen auf erfassten Kamerabildern. Hierbei soll immer derjenige Pick analysiert werden, der sich in der Bildmitte befindet. Im Spezifischen sollen verschiedene Arten faltender neuronaler Netze evaluiert und anschließend miteinander verglichen werden. Dies schließt eine geeignete Bildvorverarbeitung sowie die Definition geeigneter Vergleichsparameter mit ein. Abschließend soll eine Lokalisierung des Fehlers im Bild möglich sein.
+
+
+% Aufbau der Arbeit
+\section{Aufbau der Arbeit}
+Aus diesem Grund setzt sich Kapitel \ref{ch:Grundlagen} mit den für das Verständnis dieser Arbeit notwendigen Grundlagen auseinander. Dazu zählt ein Überblick über Stents, der Histogrammausgleich und der Aufbau und Funktionsweise faltender neuronaler Netze. Darauffolgend wird der aktuelle Stand von Methoden zur Defekterkennung in Stents und Geflechten in Abschnitt \ref{ch:state-of-the-art} vorgestellt. Des Weiteren wird der grundlegende Aufbau des Projektes Stents4Tomorrow \cite{flechtmaschine} in Kapitel \ref{ch:Konzept} dargestellt und die im Rahmen dieser Arbeit relevanten Schritte hervorgehoben. Zudem wird die Berechnung der Picklänge erläutert und die Auswahl der faltenden neuronalen Netze erklärt. Darüber hinaus werden die einzelnen Schritte der Datenvorverarbeitung und Implementierung der neuronalen Netze in Kapitel \ref{ch:implementierung} beschrieben und begründet. Im Übrigen werden die erworbenen Ergebnisse in Abschnitt \ref{ch:Bewertung} bewertet und miteinander verglichen. Hierfür werden diese vorgestellt und ausgewertet, um die faltenden neuronalen Netze anhand festgelegter Vergleichsfaktoren zu vergleichen. Anschließend werden die Ergebnisse in Kapitel \ref{ch:Fazit} zusammengefasst und die nächsten Schritte im Sinne eines Ausblicks erläutert.
+
+
+
